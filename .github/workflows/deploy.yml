@@ -1,0 +1,61 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches:
+      - main  # 当推送到 main 分支时触发
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+      
+      - name: 设置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      
+      - name: 打包前端
+        run: |
+          cd web
+          npm install
+          npm run build
+          cd ..
+          mkdir -p dist
+          cp -r web/dist/* dist/
+      
+      - name: 清理 Python 缓存
+        run: |
+          find . -type d -name "__pycache__" -exec rm -rf {} +
+          find . -type f -name "*.pyc" -delete
+      
+      - name: 压缩项目文件
+        run: |
+          zip -r ai-test.zip app templates dist docker-compose.yml Dockerfile.backend Dockerfile.frontend nginx.conf requirements.txt
+      
+      - name: 上传到服务器
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: ${{ secrets.SERVER_PORT }}
+          source: "ai-test.zip"
+          target: "/www/wwwroot/"
+      
+      - name: 远程执行部署命令
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: ${{ secrets.SERVER_PORT }}
+          script: |
+            cd /www/wwwroot/ai-test
+            unzip -o ai-test.zip
+            docker compose down
+            docker compose up -d --build
+            docker system prune -f

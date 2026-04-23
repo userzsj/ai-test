@@ -5,7 +5,7 @@
         
         <!-- 登录框 - 毛玻璃效果 -->
         <div class="login-box">
-            <h2>用户管理系统</h2>
+            <h2>管理系统</h2>
             <el-form :model="form" :rules="rules" ref="formRef" @submit.prevent="handleLogin">
                 <el-form-item prop="email">
                     <el-input 

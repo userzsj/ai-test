@@ -3,37 +3,85 @@ name: Deploy to Server
 on:
   push:
     branches:
-      - main  # 当推送到 main 分支时触发
+      - main
+    paths-ignore:
+      - '**.md'
+      - '.gitignore'
+      - 'LICENSE'
 
 jobs:
-  deploy:
+  # 第一步：检测哪些文件发生了变化
+  changes:
     runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      backend: ${{ steps.filter.outputs.backend }}
+      docker: ${{ steps.filter.outputs.docker }}
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: 检测文件变化
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - 'web/**'
+              - 'package*.json'
+            backend:
+              - 'app/**'
+              - 'requirements.txt'
+            docker:
+              - 'Dockerfile*'
+              - 'docker-compose.yml'
+              - 'nginx.conf'
+
+  deploy:
+    needs: changes
+    runs-on: ubuntu-latest
+    # 只要有任何一个变化就执行部署
+    if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.backend == 'true' || needs.changes.outputs.docker == 'true'
     
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
       
+      # ========== 前端：按需执行 ==========
       - name: 设置 Node.js
+        if: needs.changes.outputs.frontend == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: '22'
       
       - name: 打包前端
+        if: needs.changes.outputs.frontend == 'true'
         run: |
           cd web
           npm install
           npm run build
           cd ..
       
+      # ========== 后端：清理缓存 ==========
       - name: 清理 Python 缓存
+        if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true'
         run: |
           find . -type d -name "__pycache__" -exec rm -rf {} +
           find . -type f -name "*.pyc" -delete
       
+      # ========== 打包项目 ==========
       - name: 压缩项目文件
         run: |
-          zip -r ai-test.zip app templates dist docker-compose.yml Dockerfile.backend Dockerfile.frontend nginx.conf requirements.txt
+          # 根据变化决定打包内容
+          if [ "${{ needs.changes.outputs.frontend }}" == "true" ] && [ "${{ needs.changes.outputs.backend }}" != "true" ]; then
+            echo "📦 只打包前端和配置文件"
+            zip -r ai-test.zip dist docker-compose.yml Dockerfile.frontend nginx.conf
+          else
+            echo "📦 完整打包"
+            zip -r ai-test.zip app templates dist docker-compose.yml Dockerfile.backend Dockerfile.frontend nginx.conf requirements.txt
+          fi
       
+      # ========== 上传到服务器 ==========
       - name: 上传到服务器
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -44,6 +92,7 @@ jobs:
           source: "ai-test.zip"
           target: "/www/wwwroot/"
       
+      # ========== 远程部署 ==========
       - name: 远程执行部署命令
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -54,6 +103,17 @@ jobs:
           script: |
             cd /www/wwwroot/ai-test
             unzip -o ai-test.zip
-            docker compose down
-            docker compose up -d --build
+            
+            # 根据变化决定重启哪些服务
+            if [ "${{ needs.changes.outputs.backend }}" == "true" ] || [ "${{ needs.changes.outputs.docker }}" == "true" ]; then
+              echo "🔄 后端有变化，重建后端容器"
+              docker compose up -d --build backend
+            fi
+            
+            if [ "${{ needs.changes.outputs.frontend }}" == "true" ] || [ "${{ needs.changes.outputs.docker }}" == "true" ]; then
+              echo "🔄 前端有变化，重建前端容器"
+              docker compose up -d --build frontend
+            fi
+            
             docker system prune -f
+            echo "✅ 部署完成"

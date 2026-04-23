@@ -1,43 +1,48 @@
 <template>
     <div class="register-container">
+        <!-- Three.js 背景 -->
+        <ThreeBackground />
+
         <div class="register-box">
-            <h2>用户注册</h2>
-            <el-form :model="form" :rules="rules" ref="formRef">
-                <!-- 原有字段 -->
+            <h2>创建账号</h2>
+            <el-form :model="form" :rules="rules" ref="formRef" @submit.prevent="handleRegister">
                 <el-form-item prop="name">
-                    <el-input v-model="form.name" placeholder="姓名" prefix-icon="User" />
+                    <el-input v-model="form.name" placeholder="姓名" prefix-icon="User" class="glass-input" />
                 </el-form-item>
                 <el-form-item prop="email">
-                    <el-input v-model="form.email" placeholder="邮箱" prefix-icon="Message" />
+                    <el-input v-model="form.email" placeholder="邮箱" prefix-icon="Message" class="glass-input" />
                 </el-form-item>
                 <el-form-item prop="password">
-                    <el-input v-model="form.password" type="password" placeholder="密码" prefix-icon="Lock"
-                        show-password />
+                    <el-input v-model="form.password" type="password" placeholder="密码" prefix-icon="Lock" show-password
+                        class="glass-input" />
                 </el-form-item>
                 <el-form-item prop="confirmPassword">
                     <el-input v-model="form.confirmPassword" type="password" placeholder="确认密码" prefix-icon="Lock"
-                        show-password />
+                        show-password class="glass-input" />
                 </el-form-item>
+
 
                 <!-- 验证码 -->
                 <el-form-item prop="captcha_text">
                     <div class="captcha-row">
-                        <el-input v-model="form.captcha_text" placeholder="验证码" style="width: 60%" />
-                        <div class="captcha-image" @click="refreshCaptcha">
-                            <img v-if="captchaImage" :src="captchaImage" alt="验证码" />
-                            <span v-else>点击获取</span>
+                        <el-input v-model="form.captcha_text" placeholder="验证码" class="glass-input captcha-input" />
+                        <div class="captcha-box" @click="refreshCaptcha">
+                            <img v-if="captchaImage" :src="captchaImage" alt="验证码" class="captcha-img" />
+                            <div v-else class="captcha-placeholder">
+                                <span class="refresh-text">点击获取</span>
+                            </div>
                         </div>
                     </div>
                 </el-form-item>
 
                 <el-form-item>
-                    <el-button type="primary" :loading="loading" @click="handleRegister" style="width: 100%">
+                    <el-button type="primary" :loading="loading" @click="handleRegister" class="register-btn">
                         注 册
                     </el-button>
                 </el-form-item>
                 <el-form-item>
-                    <el-button type="primary" :loading="loading" @click="router.push('/login')" style="width: 100%">
-                        去登录
+                    <el-button :loading="loading" @click="router.push('/login')" class="login-btn">
+                        已有账号？去登录
                     </el-button>
                 </el-form-item>
             </el-form>
@@ -50,6 +55,8 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { authAPI } from '@/api'
 import { ElMessage } from 'element-plus'
+import { Refresh } from '@element-plus/icons-vue'
+import ThreeBackground from '@/components/ThreeBackground.vue'
 
 const router = useRouter()
 
@@ -67,12 +74,9 @@ const form = reactive({
     captcha_id: ''
 })
 
-// 获取验证码
 async function refreshCaptcha() {
     try {
         const data = await authAPI.getCaptcha()
-        console.log(data);
-        
         captchaImage.value = data.captcha_image
         captchaId.value = data.captcha_id
         form.captcha_id = data.captcha_id
@@ -81,7 +85,6 @@ async function refreshCaptcha() {
     }
 }
 
-// 自定义验证：确认密码
 const validateConfirmPassword = (rule, value, callback) => {
     if (value !== form.password) {
         callback(new Error('两次输入的密码不一致'))
@@ -128,7 +131,7 @@ async function handleRegister() {
         ElMessage.success('注册成功！请查收邮件验证邮箱')
         router.push('/login')
     } catch (error) {
-        refreshCaptcha()  // 注册失败刷新验证码
+        refreshCaptcha()
     } finally {
         loading.value = false
     }
@@ -145,52 +148,161 @@ onMounted(() => {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    position: relative;
 }
 
 .register-box {
-    width: 450px;
+    width: 460px;
     padding: 40px;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border-radius: 24px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    z-index: 1;
+    animation: slideUp 0.6s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .register-box h2 {
     text-align: center;
-    margin-bottom: 30px;
-    color: #333;
+    margin-bottom: 28px;
+    color: #fff;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    font-weight: 400;
+    letter-spacing: 3px;
+    font-size: 26px;
 }
 
+/* 毛玻璃输入框 */
+:deep(.glass-input .el-input__wrapper) {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    box-shadow: none !important;
+    border-radius: 14px !important;
+    transition: all 0.3s ease;
+}
+
+:deep(.glass-input .el-input__wrapper:hover) {
+    background: rgba(255, 255, 255, 0.18) !important;
+    border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+:deep(.glass-input .el-input__wrapper.is-focus) {
+    background: rgba(255, 255, 255, 0.18) !important;
+    border-color: #f093fb !important;
+    box-shadow: 0 0 0 2px rgba(240, 147, 251, 0.2) !important;
+}
+
+:deep(.glass-input input) {
+    color: #fff !important;
+}
+
+:deep(.glass-input input::placeholder) {
+    color: rgba(255, 255, 255, 0.65) !important;
+}
+
+:deep(.glass-input .el-input__prefix) {
+    color: rgba(255, 255, 255, 0.75) !important;
+}
+
+/* 验证码区域 */
 .captcha-row {
     display: flex;
     gap: 10px;
     width: 100%;
-}
-
-.captcha-image {
-    width: 120px;
-    height: 40px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    cursor: pointer;
-    display: flex;
     align-items: center;
-    justify-content: center;
-    background: #f5f7fa;
 }
 
-.captcha-image img {
+.captcha-input {
+    flex: 1;
+}
+
+.captcha-box {
+    width: 105px;
+    height: 40px;
+    border-radius: 10px;
+    cursor: pointer;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+}
+
+.captcha-box:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.45);
+    transform: scale(1.02);
+}
+
+.captcha-img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    border-radius: 6px;
+    display: block;
 }
 
-.tip {
-    text-align: center;
-    color: #999;
-    font-size: 14px;
-    margin-top: 20px;
+.captcha-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.refresh-text {
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+/* 按钮 */
+.register-btn {
+    width: 100%;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
+    border: none !important;
+    border-radius: 14px !important;
+    height: 46px !important;
+    font-size: 16px !important;
+    font-weight: 500 !important;
+    box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4) !important;
+    transition: all 0.3s ease !important;
+    letter-spacing: 2px;
+}
+
+.register-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(245, 87, 108, 0.5) !important;
+}
+
+.login-btn {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+    border-radius: 14px !important;
+    height: 42px !important;
+    font-size: 14px !important;
+    color: #fff !important;
+    backdrop-filter: blur(5px);
+    transition: all 0.3s ease !important;
+}
+
+.login-btn:hover {
+    background: rgba(255, 255, 255, 0.2) !important;
+    border-color: rgba(255, 255, 255, 0.4) !important;
 }
 </style>

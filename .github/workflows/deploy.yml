@@ -40,14 +40,13 @@ jobs:
   deploy:
     needs: changes
     runs-on: ubuntu-latest
-    # 只要有任何一个变化就执行部署
     if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.backend == 'true' || needs.changes.outputs.docker == 'true'
     
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
       
-      # ========== 前端：按需执行 ==========
+      # ========== 前端：按需打包 ==========
       - name: 设置 Node.js
         if: needs.changes.outputs.frontend == 'true'
         uses: actions/setup-node@v4
@@ -64,18 +63,20 @@ jobs:
       
       # ========== 后端：清理缓存 ==========
       - name: 清理 Python 缓存
-        if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true'
+        if: needs.changes.outputs.backend == 'true'
         run: |
           find . -type d -name "__pycache__" -exec rm -rf {} +
           find . -type f -name "*.pyc" -delete
       
-      # ========== 打包项目 ==========
+      # ========== 智能打包 ==========
       - name: 压缩项目文件
         run: |
-          # 根据变化决定打包内容
-          if [ "${{ needs.changes.outputs.frontend }}" == "true" ] && [ "${{ needs.changes.outputs.backend }}" != "true" ]; then
-            echo "📦 只打包前端和配置文件"
+          if [ "${{ needs.changes.outputs.frontend }}" == "true" ] && [ "${{ needs.changes.outputs.backend }}" != "true" ] && [ "${{ needs.changes.outputs.docker }}" != "true" ]; then
+            echo "📦 只打包前端"
             zip -r ai-test.zip dist docker-compose.yml Dockerfile.frontend nginx.conf
+          elif [ "${{ needs.changes.outputs.backend }}" == "true" ] && [ "${{ needs.changes.outputs.frontend }}" != "true" ] && [ "${{ needs.changes.outputs.docker }}" != "true" ]; then
+            echo "📦 只打包后端"
+            zip -r ai-test.zip app templates docker-compose.yml Dockerfile.backend requirements.txt
           else
             echo "📦 完整打包"
             zip -r ai-test.zip app templates dist docker-compose.yml Dockerfile.backend Dockerfile.frontend nginx.conf requirements.txt
@@ -92,7 +93,7 @@ jobs:
           source: "ai-test.zip"
           target: "/www/wwwroot/"
       
-      # ========== 远程部署 ==========
+      # ========== 智能部署 ==========
       - name: 远程执行部署命令
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -102,17 +103,20 @@ jobs:
           port: ${{ secrets.SERVER_PORT }}
           script: |
             cd /www/wwwroot/ai-test
-            unzip -o ai-test.zip
+            unzip -o ../ai-test.zip
             
-            # 根据变化决定重启哪些服务
-            if [ "${{ needs.changes.outputs.backend }}" == "true" ] || [ "${{ needs.changes.outputs.docker }}" == "true" ]; then
-              echo "🔄 后端有变化，重建后端容器"
-              docker compose up -d --build backend
-            fi
-            
-            if [ "${{ needs.changes.outputs.frontend }}" == "true" ] || [ "${{ needs.changes.outputs.docker }}" == "true" ]; then
-              echo "🔄 前端有变化，重建前端容器"
-              docker compose up -d --build frontend
+            if [ "${{ needs.changes.outputs.frontend }}" == "true" ] && [ "${{ needs.changes.outputs.backend }}" != "true" ] && [ "${{ needs.changes.outputs.docker }}" != "true" ]; then
+              echo "🔄 只更新前端"
+              docker compose build --no-cache frontend
+              docker compose up -d frontend
+            elif [ "${{ needs.changes.outputs.backend }}" == "true" ] && [ "${{ needs.changes.outputs.frontend }}" != "true" ] && [ "${{ needs.changes.outputs.docker }}" != "true" ]; then
+              echo "🔄 只更新后端"
+              docker compose build --no-cache backend
+              docker compose up -d backend
+            else
+              echo "🔄 完整重建"
+              docker compose down
+              docker compose up -d --build
             fi
             
             docker system prune -f

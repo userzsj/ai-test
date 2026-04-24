@@ -1,0 +1,17 @@
+# 依赖
+node_modules/
+
+# HBuilderX
+.hbuilderx/
+
+# 打包输出
+unpackage/
+dist/
+
+# 日志
+*.log
+npm-debug.log*
+
+# 系统文件
+.DS_Store
+Thumbs.db

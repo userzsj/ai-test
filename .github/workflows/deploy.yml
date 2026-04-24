@@ -8,6 +8,7 @@ on:
       - '**.md'
       - '.gitignore'
       - 'LICENSE'
+      - 'app-mobile/**'
 
 jobs:
   # 第一步：检测哪些文件发生了变化

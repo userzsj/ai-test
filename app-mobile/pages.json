@@ -1,0 +1,17 @@
+{
+  "pages": [
+    {
+      "path": "pages/login/login",
+      "style": { "navigationBarTitleText": "登录", "navigationStyle": "custom" }
+    },
+    {
+      "path": "pages/register/register",
+      "style": { "navigationBarTitleText": "注册", "navigationStyle": "custom" }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "white",
+    "navigationBarTitleText": "用户管理",
+    "navigationBarBackgroundColor": "#667eea"
+  }
+}

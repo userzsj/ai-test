@@ -72,7 +72,7 @@
                         <!-- 用户下拉 -->
                         <el-dropdown trigger="click" @command="handleUserCmd">
                             <span class="user-info">
-                                <el-avatar :size="32" class="user-avatar">
+                                <el-avatar :size="32" class="user-avatar" :src="authStore.user?.avatar || defaultAvatar">
                                     {{ authStore.user?.name?.charAt(0) || 'U' }}
                                 </el-avatar>
                                 <span class="user-name">{{ authStore.user?.name || '用户' }}</span>
@@ -83,7 +83,7 @@
                             <template #dropdown>
                                 <el-dropdown-menu>
                                     <div class="dropdown-header">
-                                        <el-avatar :size="40">{{ authStore.user?.name?.charAt(0) || 'U' }}</el-avatar>
+                                        <el-avatar :size="40" :src="authStore.user?.avatar || defaultAvatar">{{ authStore.user?.name?.charAt(0) || 'U' }}</el-avatar>
                                         <div>
                                             <div class="dropdown-name">{{ authStore.user?.name }}</div>
                                             <div class="dropdown-role">{{ authStore.user?.role === 'ADMIN' ? '管理员' :
@@ -175,16 +175,16 @@ import { onMounted, onUnmounted } from 'vue'
 const unreadCount = ref(3)
 
 const notices = ref([
-  { id: 1, text: '新用户 "张三" 已注册', time: '5 分钟前', color: '#409EFF', icon: User, read: false },
-  { id: 2, text: '系统已更新至 v2.1.0', time: '1 小时前', color: '#67C23A', icon: Setting, read: false },
-  { id: 3, text: '备份任务已完成', time: '3 小时前', color: '#E6A23C', icon: Bell, read: true },
+    { id: 1, text: '新用户 "张三" 已注册', time: '5 分钟前', color: '#409EFF', icon: User, read: false },
+    { id: 2, text: '系统已更新至 v2.1.0', time: '1 小时前', color: '#67C23A', icon: Setting, read: false },
+    { id: 3, text: '备份任务已完成', time: '3 小时前', color: '#E6A23C', icon: Bell, read: true },
 ])
 const route = useRoute()
 const router = useRouter()
 const tabsStore = useTabsStore()
 const authStore = useAuthStore()
 const collapsed = ref(false)
-
+const defaultAvatar = '/default-avatar.png'
 const menuTree = [
     { id: 'dashboard', name: '首页', path: '/dashboard', icon: House },
     {
@@ -609,70 +609,77 @@ onUnmounted(() => {
 }
 
 .notice-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 12px 16px;
-  transition: background 0.15s;
-  cursor: pointer;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 16px;
+    transition: background 0.15s;
+    cursor: pointer;
 }
+
 .notice-item.unread {
-  background: rgba(64, 158, 255, 0.03);
+    background: rgba(64, 158, 255, 0.03);
 }
+
 .notice-item:hover {
-  background: #f8f9fa;
+    background: #f8f9fa;
 }
+
 .notice-item.unread:hover {
-  background: rgba(64, 158, 255, 0.06);
+    background: rgba(64, 158, 255, 0.06);
 }
 
 .notice-left {
-  position: relative;
-  flex-shrink: 0;
+    position: relative;
+    flex-shrink: 0;
 }
+
 .notice-dot {
-  position: absolute;
-  top: -2px;
-  left: -2px;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--el-color-danger);
-  z-index: 1;
-  box-shadow: 0 0 0 2px #fff;
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--el-color-danger);
+    z-index: 1;
+    box-shadow: 0 0 0 2px #fff;
 }
 
 .notice-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    flex-shrink: 0;
 }
 
 .notice-body {
-  flex: 1;
-  min-width: 0;
+    flex: 1;
+    min-width: 0;
 }
+
 .notice-text {
-  font-size: 13px;
-  color: #444;
-  line-height: 1.5;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+    font-size: 13px;
+    color: #444;
+    line-height: 1.5;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
+
 .notice-item.unread .notice-text {
-  font-weight: 500;
-  color: #333;
+    font-weight: 500;
+    color: #333;
 }
+
 .notice-time {
-  font-size: 12px;
-  color: #bbb;
-  margin-top: 4px;
+    font-size: 12px;
+    color: #bbb;
+    margin-top: 4px;
 }
 
 .notice-footer {

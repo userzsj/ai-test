@@ -29,7 +29,7 @@ onMounted(() => {
             },
             light: {
                 main: { intensity: 1.5, shadow: true, alpha: 10, beta: 70 },
-                ambient: { intensity: 0.4 }
+                ambient: { intensity: 0.6 }
             },
             viewControl: {
                 autoRotate: true,

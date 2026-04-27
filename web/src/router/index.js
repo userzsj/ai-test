@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
+import { ElMessageBox } from 'element-plus'
 const routes = [
   {
     path: '/login',
@@ -44,15 +45,29 @@ const router = createRouter({
   routes
 })
 
-router.beforeEach((to, from, next) => {
+
+router.beforeEach(async (to, from, next) => {
   const token = localStorage.getItem('access_token')
+
   if (to.meta.requiresAuth && !token) {
-    next('/login')
-  } else if ((to.path === '/login' || to.path === '/register') && token) {
-    next('/dashboard')
-  } else {
-    next()
+    try {
+      await ElMessageBox.alert('登录已过期，请重新登录', '提示', {
+        confirmButtonText: '确定',
+        type: 'warning',
+      })
+    } finally {
+      // 无论点确定还是叉掉，都跳转登录页
+      next({ path: '/login', replace: true })
+    }
+    return
   }
+
+  if ((to.path === '/login' || to.path === '/register') && token) {
+    next('/dashboard')
+    return
+  }
+
+  next()
 })
 
 export default router

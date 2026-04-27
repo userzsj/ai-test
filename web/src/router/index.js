@@ -15,13 +15,27 @@ const routes = [
   },
   {
     path: '/',
-    name: 'Users',
-    component: () => import('@/views/Users.vue'),
-    meta: { requiresAuth: true }
+    component: () => import('@/views/Layout.vue'),
+    meta: { requiresAuth: true },
+    redirect: '/dashboard',
+    children: [
+      {
+        path: 'dashboard',
+        name: 'Dashboard',
+        component: () => import('@/views/Dashboard.vue'),
+        meta: { title: '首页' }
+      },
+      {
+        path: 'users',
+        name: 'Users',
+        component: () => import('@/views/Users.vue'),
+        meta: { title: '用户列表' }
+      }
+    ]
   },
   {
-    path: '/:pathMatch(.*)*',
-    redirect: '/'
+    path: '/_refresh',
+    redirect: '/dashboard'
   }
 ]
 
@@ -30,14 +44,12 @@ const router = createRouter({
   routes
 })
 
-// 路由守卫
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('access_token')
-  
   if (to.meta.requiresAuth && !token) {
     next('/login')
   } else if ((to.path === '/login' || to.path === '/register') && token) {
-    next('/')
+    next('/dashboard')
   } else {
     next()
   }

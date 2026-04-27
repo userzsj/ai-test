@@ -5,7 +5,7 @@ import 'element-plus/dist/index.css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import App from './App.vue'
 import router from './router'
-
+window.CESIUM_BASE_URL = '/cesium/';
 const app = createApp(App)
 const pinia = createPinia()
 

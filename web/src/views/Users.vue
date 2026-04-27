@@ -259,8 +259,6 @@ onMounted(() => {
 
 <style scoped>
 .users-container {
-  padding: 20px;
-  background: #f5f7fa;
   min-height: 100vh;
 }
 .header {

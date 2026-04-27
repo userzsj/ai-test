@@ -53,8 +53,8 @@ const authStore = useAuthStore()
 const formRef = ref()
 const loading = ref(false)
 const form = reactive({
-    email: '',
-    password: ''
+    email: '1318387570@qq.com',
+    password: '123456'
 })
 
 const rules = {

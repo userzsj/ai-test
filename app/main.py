@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from slowapi.errors import RateLimitExceeded
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.middleware import SlowAPIMiddleware
+from fastapi.exceptions import HTTPException
 import time
 import os
 
@@ -48,6 +49,17 @@ async def log_requests(request: Request, call_next):
     logger.info(f"<-- {request.method} {request.url.path} | Status: {response.status_code} | Duration: {duration:.2f}ms")
     return response
 
+# 异常处理器
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "code": exc.status_code,
+            "message": exc.detail,
+            "data": None
+        }
+    )
 
 # 异常处理器
 @app.exception_handler(RateLimitExceeded)

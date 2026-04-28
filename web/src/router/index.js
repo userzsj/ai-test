@@ -31,6 +31,24 @@ const routes = [
         name: 'Users',
         component: () => import('@/views/Users.vue'),
         meta: { title: '用户列表' }
+      },
+      {
+        path: 'theme',
+        name: 'Theme',
+        component: () => import('@/views/Theme.vue'),
+        meta: { title: '主题设置' }
+      },
+      {
+        path: 'profile',
+        name: 'Profile',
+        component: () => import('@/views/Profile.vue'),
+        meta: { title: '个人中心' }
+      },
+      {
+        path: 'settings',
+        name: 'Settings',
+        component: () => import('@/views/Settings.vue'),
+        meta: { title: '系统设置' }
       }
     ]
   },

@@ -17,6 +17,14 @@
                         <span class="logo-text">用户管理系统</span>
                     </div>
                     <div class="top-right">
+                        <!-- 主题设置按钮 -->
+                        <el-tooltip content="主题设置" placement="bottom">
+                            <span class="header-btn" @click="goTheme">
+                                <el-icon :size="20">
+                                    <Brush />
+                                </el-icon>
+                            </span>
+                        </el-tooltip>
                         <!-- 通知按钮 -->
                         <el-popover placement="bottom" :width="320" trigger="click" :show-arrow="false">
                             <template #reference>
@@ -72,7 +80,8 @@
                         <!-- 用户下拉 -->
                         <el-dropdown trigger="click" @command="handleUserCmd">
                             <span class="user-info">
-                                <el-avatar :size="32" class="user-avatar" :src="authStore.user?.avatar || defaultAvatar">
+                                <el-avatar :size="32" class="user-avatar"
+                                    :src="authStore.user?.avatar || defaultAvatar">
                                     {{ authStore.user?.name?.charAt(0) || 'U' }}
                                 </el-avatar>
                                 <span class="user-name">{{ authStore.user?.name || '用户' }}</span>
@@ -83,7 +92,8 @@
                             <template #dropdown>
                                 <el-dropdown-menu>
                                     <div class="dropdown-header">
-                                        <el-avatar :size="40" :src="authStore.user?.avatar || defaultAvatar">{{ authStore.user?.name?.charAt(0) || 'U' }}</el-avatar>
+                                        <el-avatar :size="40" :src="authStore.user?.avatar || defaultAvatar">{{
+                                            authStore.user?.name?.charAt(0) || 'U' }}</el-avatar>
                                         <div>
                                             <div class="dropdown-name">{{ authStore.user?.name }}</div>
                                             <div class="dropdown-role">{{ authStore.user?.role === 'ADMIN' ? '管理员' :
@@ -102,7 +112,13 @@
                                         </el-icon>
                                         系统设置
                                     </el-dropdown-item>
-                                    <el-dropdown-item command="logout" divided>
+                                    <el-dropdown-item command="lock" divided>
+                                        <el-icon>
+                                            <Lock />
+                                        </el-icon>
+                                        锁屏
+                                    </el-dropdown-item>
+                                    <el-dropdown-item command="logout">
                                         <el-icon>
                                             <SwitchButton />
                                         </el-icon>
@@ -158,6 +174,7 @@
             </div>
             <div @click="tabsStore.closeAllTabs(); ctx.visible = false">关闭全部</div>
         </div>
+        <ScreenLock v-model:visible="isLocked" :auto-lock-timeout="10" />
     </div>
 </template>
 
@@ -169,9 +186,10 @@ import SideMenu from '@/components/SideMenu.vue'
 import { useTabsStore } from '@/stores/tabs'
 import { useAuthStore } from '@/stores/auth'
 import { House, User } from '@element-plus/icons-vue'
-import { ArrowUpBold, Setting, Bell } from '@element-plus/icons-vue'
+import { ArrowUpBold, Setting, Bell, Brush } from '@element-plus/icons-vue'
 import { onMounted, onUnmounted } from 'vue'
-
+import ScreenLock from '@/components/ScreenLock.vue'
+const isLocked = ref(false)
 const unreadCount = ref(3)
 
 const notices = ref([
@@ -189,7 +207,7 @@ const menuTree = [
     { id: 'dashboard', name: '首页', path: '/dashboard', icon: House },
     {
         id: 'user-manage', name: '用户管理', icon: User, children: [
-            { id: 'users', name: '用户列表', path: '/users' }
+            { id: 'users', name: '用户列表', path: '/users' },
         ]
     }
 ]
@@ -202,10 +220,11 @@ function onTabContext(e, tab) {
 }
 
 
-watch(() => route.path, path => {
+watch(() => route.path, (path) => {
     if (path === '/_refresh') return router.replace(route.query.redirect || '/dashboard')
     if (path !== '/login' && path !== '/register') {
-        const name = menuTree.flatMap(m => [m, ...(m.children || [])]).find(m => m.path === path)?.name || path
+        // 从当前路由匹配的 meta.title 获取名称
+        const name = route.meta?.title || path
         tabsStore.addTab({ path, meta: { title: name } })
     }
 }, { immediate: true })
@@ -238,10 +257,16 @@ function handleUserCmd(cmd) {
         authStore.logout()
         router.push('/login')
     } else if (cmd === 'profile') {
-        ElMessage.info('个人中心开发中')
+         router.push('/profile')
     } else if (cmd === 'settings') {
-        ElMessage.info('系统设置开发中')
+        router.push('/settings')
+    } else if (cmd === 'lock') {
+        isLocked.value = true
     }
+}
+
+function goTheme() {
+    router.push('/theme')
 }
 onMounted(() => {
     mainEl = document.getElementById('main-content')
@@ -391,7 +416,7 @@ onUnmounted(() => {
     align-items: center;
     gap: 12px;
     padding: 12px 16px 14px;
-    border-bottom: 1px solid #f0f0f0;
+    /* border-bottom: 1px solid #f0f0f0; */
 }
 
 .dropdown-name {
@@ -477,7 +502,7 @@ onUnmounted(() => {
 .back-top-btn {
     position: absolute;
     bottom: 28px;
-    right: 28px;
+    right: 18px;
     width: 44px;
     height: 44px;
     border-radius: 50%;

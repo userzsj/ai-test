@@ -49,6 +49,12 @@ const routes = [
         name: 'Settings',
         component: () => import('@/views/Settings.vue'),
         meta: { title: '系统设置' }
+      },
+      {
+        path: 'ai-chat',
+        name: 'AiChat',
+        component: () => import('@/views/AiChat.vue'),
+        meta: { title: 'AI 助手' }
       }
     ]
   },

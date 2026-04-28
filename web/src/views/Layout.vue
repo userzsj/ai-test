@@ -186,7 +186,7 @@ import SideMenu from '@/components/SideMenu.vue'
 import { useTabsStore } from '@/stores/tabs'
 import { useAuthStore } from '@/stores/auth'
 import { House, User } from '@element-plus/icons-vue'
-import { ArrowUpBold, Setting, Bell, Brush } from '@element-plus/icons-vue'
+import { ArrowUpBold, Setting, Bell, Brush, ChatDotRound } from '@element-plus/icons-vue'
 import { onMounted, onUnmounted } from 'vue'
 import ScreenLock from '@/components/ScreenLock.vue'
 const isLocked = ref(false)
@@ -208,6 +208,11 @@ const menuTree = [
     {
         id: 'user-manage', name: '用户管理', icon: User, children: [
             { id: 'users', name: '用户列表', path: '/users' },
+        ]
+    },
+    {
+        id: 'tools', name: '工具箱', icon: Setting, children: [
+            { id: 'ai-chat', name: 'AI 助手', path: '/ai-chat', icon: ChatDotRound },
         ]
     }
 ]
@@ -257,7 +262,7 @@ function handleUserCmd(cmd) {
         authStore.logout()
         router.push('/login')
     } else if (cmd === 'profile') {
-         router.push('/profile')
+        router.push('/profile')
     } else if (cmd === 'settings') {
         router.push('/settings')
     } else if (cmd === 'lock') {

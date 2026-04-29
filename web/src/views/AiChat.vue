@@ -49,12 +49,9 @@
                 </div>
             </div>
 
-            <div v-if="loading" class="ds-row ds-row-ai">
-                <div class="ds-row-inner">
-                    <div class="ds-avatar">
-                        <img src="/default-avatar.png" class="ds-ai-logo" />
-                    </div>
-                    <div class="ds-text">
+            <div v-if="loading && !hasStreamContent" class="ds-row">
+                <div class="ds-row-inner" style="justify-content: center;">
+                    <div class="ds-text" style="text-align: center; flex: none;">
                         <span class="ds-dot"></span>
                         <span class="ds-dot"></span>
                         <span class="ds-dot"></span>
@@ -91,7 +88,7 @@ const loading = ref(false)
 const msgContainer = ref(null)
 const messages = ref([])
 const currentModel = ref('deepseek-v4-flash')
-
+const hasStreamContent = ref(false)
 function switchModel(model) {
     currentModel.value = model
 }
@@ -108,7 +105,8 @@ function renderContent(text) {
         const highlighted = lang
             ? hljs.highlight(decoded, { language: lang }).value
             : hljs.highlightAuto(decoded).value
-        return `<div class="cb"><div class="cb-h"><span>${lang || 'code'}</span><div class="cb-btns"><button class="cb-btn" data-code="${escapeHTML(decoded)}">复制</button><button class="cb-btn" data-code="${escapeHTML(decoded)}" data-lang="${lang || 'txt'}">下载</button></div></div><pre><code>${highlighted}</code></pre></div>`
+        const encodedCode = encodeURIComponent(decoded)
+        return `<div class="cb"><div class="cb-h"><span>${lang || 'code'}</span><div class="cb-btns"><button class="cb-btn" data-code="${encodedCode}">复制</button><button class="cb-btn" data-code="${encodedCode}" data-lang="${lang || 'txt'}">下载</button></div></div><pre><code>${highlighted}</code></pre></div>`
     })
 
     html = html.replace(/`([^`]+)`/g, '<code class="ic">$1</code>')
@@ -124,7 +122,7 @@ function escapeHTML(str) {
 function handleCodeClick(e) {
     const btn = e.target.closest('.cb-btn')
     if (!btn) return
-    const code = btn.dataset.code
+    const code = decodeURIComponent(btn.dataset.code)
     if (btn.textContent === '复制') {
         navigator.clipboard.writeText(code).then(() => { btn.textContent = '已复制'; setTimeout(() => btn.textContent = '复制', 2000) })
     } else {
@@ -137,14 +135,21 @@ function handleCodeClick(e) {
 }
 
 async function handleSend(content) {
+    hasStreamContent.value = false
     const text = content?.trim?.() || content
     if (!text || loading.value) return
 
     messages.value.push({ id: Date.now(), role: 'user', content: text })
     inputText.value = ''
     scrollBottom()
-
+    // 清除旧的多余空占位
+    messages.value = messages.value.filter(m => !(m.role === 'ai' && m.content === ''))
     loading.value = true
+
+    // 先创建一个空的 AI 消息占位
+    const aiMsgId = Date.now() + 1
+    messages.value.push({ id: aiMsgId, role: 'ai', content: '' })
+
     try {
         const response = await fetch('https://api.deepseek.com/chat/completions', {
             method: 'POST',
@@ -154,18 +159,58 @@ async function handleSend(content) {
             },
             body: JSON.stringify({
                 model: currentModel.value,
-                messages: messages.value.map(m => ({
-                    role: m.role === 'ai' ? 'assistant' : 'user',
-                    content: m.content
-                }))
+                messages: messages.value
+                    .filter(m => m.role !== 'ai' || m.content !== '')  // 过滤空占位
+                    .map(m => ({
+                        role: m.role === 'ai' ? 'assistant' : 'user',
+                        content: m.content
+                    })),
+                stream: true   // ← 开启流式输出
             })
         })
 
-        const data = await response.json()
-        const reply = data.choices?.[0]?.message?.content || '抱歉，没有收到回复'
-        messages.value.push({ id: Date.now() + 1, role: 'ai', content: reply })
+        const reader = response.body.getReader()
+        const decoder = new TextDecoder()
+        let buffer = ''
+
+        while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
+
+            buffer += decoder.decode(value, { stream: true })
+
+            // 解析 SSE 数据
+            const lines = buffer.split('\n')
+            buffer = lines.pop() || ''
+
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    const jsonStr = line.slice(6).trim()
+                    if (jsonStr === '[DONE]') continue
+
+                    try {
+                        const json = JSON.parse(jsonStr)
+                        const delta = json.choices?.[0]?.delta?.content || ''
+                        // 追加到 AI 消息中
+                        if (hasStreamContent.value == false && delta) {
+                            hasStreamContent.value = true  // 收到第一个字，隐藏 loading
+                        }
+                        const aiMsg = messages.value.find(m => m.id === aiMsgId)
+                        if (aiMsg) {
+                            aiMsg.content += delta
+                        }
+                        scrollBottom()
+                    } catch (e) {
+                        // 解析失败，跳过该行
+                    }
+                }
+            }
+        }
     } catch (e) {
-        messages.value.push({ id: Date.now() + 1, role: 'ai', content: '请求失败，请稍后重试' })
+        const aiMsg = messages.value.find(m => m.id === aiMsgId)
+        if (aiMsg && !aiMsg.content) {
+            aiMsg.content = '请求失败，请稍后重试'
+        }
     } finally {
         loading.value = false
         scrollBottom()
@@ -324,6 +369,10 @@ onUnmounted(() => document.removeEventListener('click', handleCodeClick))
     white-space: pre-wrap;
     word-break: break-word;
     flex: 1;
+    min-width: 0;
+    /* 关键：允许 flex 子元素缩小 */
+    overflow: hidden;
+    /* 防止溢出 */
 }
 
 .ds-dot {

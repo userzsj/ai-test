@@ -1,5 +1,6 @@
 <template>
   <span ref="countRef">{{ displayValue }}</span>
+  
 </template>
 
 <script setup>

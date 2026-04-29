@@ -54,8 +54,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.frontend
-      args:
-        VITE_DEEPSEEK_API_KEY: ${VITE_DEEPSEEK_API_KEY}   # ← 从 .env 动态读取
     container_name: ai-test-frontend
     restart: always
     ports:

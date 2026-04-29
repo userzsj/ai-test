@@ -46,7 +46,11 @@ jobs:
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
-      
+      # ========== 注入环境变量 ==========
+      - name: 创建 .env 文件
+        if: needs.changes.outputs.frontend == 'true'
+        run: |
+          echo "VITE_DEEPSEEK_API_KEY=${{ secrets.VITE_DEEPSEEK_API_KEY }}" > web/.env
       # ========== 前端：按需打包 ==========
       - name: 设置 Node.js
         if: needs.changes.outputs.frontend == 'true'

@@ -123,9 +123,27 @@ function handleCodeClick(e) {
     const btn = e.target.closest('.cb-btn')
     if (!btn) return
     const code = decodeURIComponent(btn.dataset.code)
+
     if (btn.textContent === '复制') {
-        navigator.clipboard.writeText(code).then(() => { btn.textContent = '已复制'; setTimeout(() => btn.textContent = '复制', 2000) })
-    } else {
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(code).then(() => {
+                btn.textContent = '已复制'
+                setTimeout(() => btn.textContent = '复制', 2000)
+            })
+        } else {
+            // 兜底方案：textarea + execCommand
+            const textarea = document.createElement('textarea')
+            textarea.value = code
+            textarea.style.position = 'fixed'
+            textarea.style.opacity = '0'
+            document.body.appendChild(textarea)
+            textarea.select()
+            document.execCommand('copy')
+            document.body.removeChild(textarea)
+            btn.textContent = '已复制'
+            setTimeout(() => btn.textContent = '复制', 2000)
+        }
+    } else if (btn.textContent === '下载') {
         const blob = new Blob([code], { type: 'text/plain' })
         const a = document.createElement('a')
         a.href = URL.createObjectURL(blob)

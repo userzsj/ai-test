@@ -1,0 +1,1350 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>🌸 岁时记 · 代码小诗</title>
+    <style>
+        /* ===== CSS 变量 —— 由 JS 动态切换 ===== */
+        :root {
+            --bg-start: #fce4ec;
+            --bg-end: #f8e8e0;
+            --card-bg: rgba(255, 250, 245, 0.75);
+            --text-primary: #5d3a2e;
+            --text-secondary: #9b7a6b;
+            --accent: #c68b7a;
+            --accent-hover: #b67663;
+            --badge-bg: #ffede6;
+            --badge-text: #4d3327;
+            --border: rgba(255, 215, 200, 0.40);
+            --shadow: rgba(200, 120, 100, 0.20);
+            --shadow-hover: rgba(200, 110, 80, 0.25);
+            --canvas-bg: #f5e3db;
+            --footer-text: #9b7a6b;
+            --divider: rgba(200, 160, 140, 0.20);
+            --code-bg: #f5e3db;
+            --code-color: #6a4c3d;
+            --cal-bg: rgba(255, 248, 245, 0.95);
+            --cal-cell-hover: rgba(200, 140, 120, 0.10);
+            --cal-cell-active: rgba(200, 140, 120, 0.18);
+            --cal-cell-current: rgba(200, 140, 120, 0.30);
+            --snow-color: rgba(200, 140, 120, 0.25);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(145deg, var(--bg-start) 0%, var(--bg-end) 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', 'PingFang SC', Roboto, system-ui, sans-serif;
+            padding: 1rem;
+            transition: background 0.8s ease;
+        }
+
+        /* ===== 卡片 ===== */
+        .card {
+            max-width: 720px;
+            width: 100%;
+            background: var(--card-bg);
+            backdrop-filter: blur(8px);
+            border-radius: 48px;
+            padding: 2.4rem 2rem 2.8rem;
+            box-shadow: 0 20px 60px var(--shadow),
+                        0 8px 24px rgba(180, 90, 70, 0.08);
+            border: 1px solid var(--border);
+            transition: all 0.5s ease;
+            position: relative;
+        }
+
+        .card:hover {
+            box-shadow: 0 28px 72px var(--shadow-hover);
+            transform: translateY(-2px);
+        }
+
+        /* ===== 头部 ===== */
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 1.6rem;
+            flex-wrap: wrap;
+        }
+
+        .header h1 {
+            font-weight: 600;
+            font-size: 2rem;
+            color: var(--text-primary);
+            letter-spacing: 1px;
+            transition: color 0.4s ease;
+        }
+
+        .header .sub {
+            background: var(--badge-bg);
+            padding: 0.2rem 0.9rem;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            color: var(--badge-text);
+            font-weight: 500;
+            white-space: nowrap;
+            transition: all 0.4s ease;
+        }
+
+        /* ===== Canvas ===== */
+        .canvas-wrapper {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            border-radius: 32px;
+            overflow: hidden;
+            margin-bottom: 2rem;
+            background: var(--canvas-bg);
+            box-shadow: inset 0 0 0 1px rgba(255, 220, 200, 0.5),
+                        0 8px 24px rgba(140, 80, 60, 0.08);
+            transition: background 0.6s ease;
+        }
+
+        #sakuraCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* ===== 信息栏 ===== */
+        .info-area {
+            position: relative;
+            z-index: 10;
+        }
+
+        .info {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem 0.5rem;
+        }
+
+        .date-badge {
+            background: var(--badge-bg);
+            padding: 0.5rem 1.2rem;
+            border-radius: 60px;
+            font-size: 0.95rem;
+            color: var(--badge-text);
+            font-weight: 500;
+            box-shadow: 0 2px 6px rgba(160, 100, 80, 0.06);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            white-space: nowrap;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .date-badge:hover {
+            border-color: var(--accent);
+            transform: translateY(-1px);
+        }
+
+        .date-badge:active {
+            transform: scale(0.97);
+        }
+
+        .date-badge .arrow {
+            font-size: 0.7rem;
+            transition: transform 0.3s ease;
+            opacity: 0.6;
+        }
+
+        .date-badge.open .arrow {
+            transform: rotate(180deg);
+        }
+
+        .action-btn {
+            background: var(--accent);
+            border: none;
+            color: white;
+            font-weight: 500;
+            font-size: 0.95rem;
+            padding: 0.5rem 1.6rem;
+            border-radius: 60px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 12px rgba(180, 110, 80, 0.20);
+            letter-spacing: 0.3px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .action-btn:hover {
+            background: var(--accent-hover);
+            transform: scale(1.02);
+            box-shadow: 0 8px 20px rgba(170, 100, 70, 0.25);
+        }
+
+        .action-btn:active {
+            transform: scale(0.97);
+        }
+
+        /* ===== 日历面板（浮动） ===== */
+        .calendar-panel {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: calc(100% + 8px);
+            opacity: 0;
+            transform: translateY(-8px);
+            pointer-events: none;
+            transition: opacity 0.22s ease, transform 0.22s ease;
+            background: var(--cal-bg);
+            border-radius: 24px;
+            box-shadow: 0 16px 40px rgba(0,0,0,0.10), 0 4px 16px rgba(0,0,0,0.06);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+        }
+
+        .calendar-panel.show {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .calendar-inner {
+            padding: 1rem;
+        }
+
+        .cal-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+        }
+
+        .cal-cell {
+            padding: 0.55rem 0.3rem;
+            text-align: center;
+            border-radius: 14px;
+            cursor: pointer;
+            font-size: 0.82rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            white-space: nowrap;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .cal-cell:hover {
+            background: var(--cal-cell-hover);
+        }
+
+        .cal-cell:active {
+            transform: scale(0.94);
+        }
+
+        .cal-cell.current {
+            background: var(--cal-cell-current);
+            font-weight: 700;
+        }
+
+        .cal-cell.active {
+            background: var(--cal-cell-active);
+            box-shadow: inset 0 0 0 1.5px var(--accent);
+            font-weight: 700;
+        }
+
+        .cal-cell.active.current {
+            background: var(--accent);
+            color: white;
+            box-shadow: 0 2px 8px rgba(180, 110, 80, 0.25);
+        }
+
+        /* ===== 底部 ===== */
+        .footer-note {
+            margin-top: 1.6rem;
+            font-size: 0.85rem;
+            color: var(--footer-text);
+            text-align: center;
+            border-top: 1px solid var(--divider);
+            padding-top: 1.2rem;
+            letter-spacing: 0.4px;
+            transition: all 0.4s ease;
+        }
+
+        .footer-note code {
+            background: var(--code-bg);
+            padding: 0.15rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            color: var(--code-color);
+            font-family: 'JetBrains Mono', monospace;
+            transition: all 0.4s ease;
+        }
+
+        /* ===== 响应式 ===== */
+        @media (max-width: 600px) {
+            .card {
+                padding: 1.4rem 1rem 1.6rem;
+                border-radius: 32px;
+            }
+            .header {
+                gap: 8px;
+                margin-bottom: 1rem;
+            }
+            .header h1 {
+                font-size: 1.45rem;
+            }
+            .header .sub {
+                font-size: 0.75rem;
+                padding: 0.15rem 0.6rem;
+            }
+            .info {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.7rem;
+            }
+            .date-badge {
+                justify-content: center;
+                font-size: 0.85rem;
+                padding: 0.45rem 1rem;
+            }
+            .action-btn {
+                justify-content: center;
+                font-size: 0.88rem;
+                padding: 0.5rem 1.2rem;
+            }
+            .canvas-wrapper {
+                border-radius: 24px;
+                aspect-ratio: 4 / 3;
+                margin-bottom: 1.2rem;
+            }
+            .calendar-inner {
+                padding: 0.7rem 0.5rem;
+            }
+            .calendar-panel {
+                left: -0.5rem;
+                right: -0.5rem;
+            }
+            .cal-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 4px;
+            }
+            .cal-cell {
+                font-size: 0.78rem;
+                padding: 0.5rem 0.2rem;
+                border-radius: 12px;
+            }
+            .footer-note {
+                margin-top: 1rem;
+                padding-top: 0.8rem;
+                font-size: 0.78rem;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .card {
+                padding: 1rem 0.7rem 1.2rem;
+            }
+            .header h1 {
+                font-size: 1.2rem;
+            }
+            .cal-grid {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 3px;
+            }
+            .cal-cell {
+                font-size: 0.7rem;
+                padding: 0.4rem 0.1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="header">
+        <h1 id="titleEl">🌸 樱落 · 代码</h1>
+        <span class="sub" id="subEl">🍃 春日即景</span>
+    </div>
+
+    <div class="canvas-wrapper">
+        <canvas id="sakuraCanvas"></canvas>
+    </div>
+
+    <div class="info-area">
+        <div class="info">
+            <div class="date-badge" id="dateBadge" role="button" aria-label="选择月份">
+                <span id="badgeEmoji">🌸</span>
+                <span id="badgeText">2026·春分</span>
+                <span class="arrow">▼</span>
+            </div>
+            <button class="action-btn" id="resetBtn">
+                ✦ 再落一场
+            </button>
+        </div>
+
+        <div class="calendar-panel" id="calendarPanel">
+            <div class="calendar-inner">
+                <div class="cal-grid" id="calGrid"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer-note" id="footerNote">
+        <code id="codeTag">/* 花瓣 · 微风 · 三月 */</code> &nbsp;<span id="footerText">每片花瓣都是一行温柔的代码</span>
+    </div>
+</div>
+
+<script>
+(function() {
+    // =========================================================================
+    // 十二个月主题配置
+    // =========================================================================
+    const MONTH_THEMES = {
+        1: {
+            name: '冬日雪景', emoji: '❄️', subtitle: '深冬 · 静雪',
+            cssVars: {
+                '--bg-start': '#e0ecf5', '--bg-end': '#d6e0ec',
+                '--card-bg': 'rgba(240, 245, 252, 0.78)',
+                '--text-primary': '#3a4a5c', '--text-secondary': '#6b7d8e',
+                '--accent': '#7a93ac', '--accent-hover': '#5d7a96',
+                '--badge-bg': '#e8f0f8', '--badge-text': '#3a4a5c',
+                '--border': 'rgba(180, 200, 220, 0.45)',
+                '--shadow': 'rgba(100, 130, 160, 0.18)',
+                '--shadow-hover': 'rgba(90, 120, 150, 0.22)',
+                '--canvas-bg': '#dfe8f2',
+                '--footer-text': '#6b7d8e',
+                '--divider': 'rgba(160, 180, 200, 0.22)',
+                '--code-bg': '#dfe8f2', '--code-color': '#4a5d70',
+                '--cal-bg': 'rgba(242, 248, 255, 0.96)',
+                '--cal-cell-hover': 'rgba(120, 150, 180, 0.10)',
+                '--cal-cell-active': 'rgba(120, 150, 180, 0.18)',
+                '--cal-cell-current': 'rgba(120, 150, 180, 0.28)',
+                '--snow-color': 'rgba(140, 170, 200, 0.22)',
+            },
+            particle: { type: 'iceflake', count: 120, speedFactor: 0.6, windBase: 0.010,
+                sizeMin: 5, sizeMax: 18, colors: [{h:200,s:18,l:82,a:0.72}, {h:208,s:22,l:88,a:0.62}, {h:195,s:15,l:76,a:0.68}] },
+            badge: '2026 · 深冬', footer: ['/* 冰晶 · 凛冬 · 一月 */', '每片冰晶都是一行清澈的代码'],
+        },
+        2: {
+            name: '梅花初绽', emoji: '🌺', subtitle: '早春 · 暗香',
+            cssVars: {
+                '--bg-start': '#f5e6f0', '--bg-end': '#fce4ec',
+                '--card-bg': 'rgba(252, 245, 250, 0.76)',
+                '--text-primary': '#5a3548', '--text-secondary': '#8b6b7a',
+                '--accent': '#c47a90', '--accent-hover': '#b05d76',
+                '--badge-bg': '#fce8f0', '--badge-text': '#5a3548',
+                '--border': 'rgba(220, 190, 200, 0.42)',
+                '--shadow': 'rgba(180, 110, 130, 0.18)',
+                '--shadow-hover': 'rgba(170, 100, 120, 0.23)',
+                '--canvas-bg': '#f2e3ea',
+                '--footer-text': '#8b6b7a',
+                '--divider': 'rgba(200, 160, 175, 0.22)',
+                '--code-bg': '#f2e3ea', '--code-color': '#6a4d5a',
+                '--cal-bg': 'rgba(255, 248, 252, 0.96)',
+                '--cal-cell-hover': 'rgba(190, 130, 150, 0.10)',
+                '--cal-cell-active': 'rgba(190, 130, 150, 0.18)',
+                '--cal-cell-current': 'rgba(190, 130, 150, 0.28)',
+                '--snow-color': 'rgba(190, 130, 150, 0.22)',
+            },
+            particle: { type: 'petal', count: 100, speedFactor: 0.65, windBase: 0.010,
+                sizeMin: 10, sizeMax: 26, colors: [{h:340,s:45,l:72,a:0.75}, {h:348,s:50,l:78,a:0.65}, {h:335,s:35,l:65,a:0.7}] },
+            badge: '2026 · 早春', footer: ['/* 梅花 · 暗香 · 二月 */', '每朵梅花都是一行坚韧的代码'],
+        },
+        3: {
+            name: '樱落如雪', emoji: '🌸', subtitle: '春分 · 樱吹雪',
+            cssVars: {
+                '--bg-start': '#fce4ec', '--bg-end': '#f8e8e0',
+                '--card-bg': 'rgba(255, 250, 245, 0.75)',
+                '--text-primary': '#5d3a2e', '--text-secondary': '#9b7a6b',
+                '--accent': '#c68b7a', '--accent-hover': '#b67663',
+                '--badge-bg': '#ffede6', '--badge-text': '#4d3327',
+                '--border': 'rgba(255, 215, 200, 0.40)',
+                '--shadow': 'rgba(200, 120, 100, 0.20)',
+                '--shadow-hover': 'rgba(200, 110, 80, 0.25)',
+                '--canvas-bg': '#f5e3db',
+                '--footer-text': '#9b7a6b',
+                '--divider': 'rgba(200, 160, 140, 0.20)',
+                '--code-bg': '#f5e3db', '--code-color': '#6a4c3d',
+                '--cal-bg': 'rgba(255, 248, 245, 0.95)',
+                '--cal-cell-hover': 'rgba(200, 140, 120, 0.10)',
+                '--cal-cell-active': 'rgba(200, 140, 120, 0.18)',
+                '--cal-cell-current': 'rgba(200, 140, 120, 0.30)',
+                '--snow-color': 'rgba(200, 140, 120, 0.25)',
+            },
+            particle: { type: 'petal', count: 110, speedFactor: 0.7, windBase: 0.012,
+                sizeMin: 12, sizeMax: 30, colors: [{h:340,s:40,l:78,a:0.75}, {h:348,s:45,l:82,a:0.65}, {h:335,s:35,l:72,a:0.7}] },
+            badge: '2026 · 春分', footer: ['/* 花瓣 · 微风 · 三月 */', '每片花瓣都是一行温柔的代码'],
+        },
+        4: {
+            name: '春雨桃花', emoji: '🌧️', subtitle: '清明 · 细雨',
+            cssVars: {
+                '--bg-start': '#f5ede0', '--bg-end': '#e8dfd0',
+                '--card-bg': 'rgba(250, 245, 238, 0.76)',
+                '--text-primary': '#5a4535', '--text-secondary': '#8b7565',
+                '--accent': '#b89570', '--accent-hover': '#a07855',
+                '--badge-bg': '#f5e8d8', '--badge-text': '#5a4535',
+                '--border': 'rgba(210, 190, 165, 0.42)',
+                '--shadow': 'rgba(160, 130, 100, 0.17)',
+                '--shadow-hover': 'rgba(150, 120, 90, 0.22)',
+                '--canvas-bg': '#ece0d2',
+                '--footer-text': '#8b7565',
+                '--divider': 'rgba(190, 165, 140, 0.22)',
+                '--code-bg': '#ece0d2', '--code-color': '#6a5545',
+                '--cal-bg': 'rgba(252, 248, 242, 0.96)',
+                '--cal-cell-hover': 'rgba(170, 140, 110, 0.10)',
+                '--cal-cell-active': 'rgba(170, 140, 110, 0.18)',
+                '--cal-cell-current': 'rgba(170, 140, 110, 0.28)',
+                '--snow-color': 'rgba(170, 140, 115, 0.20)',
+            },
+            particle: { type: 'rainPetal', count: 120, speedFactor: 0.85, windBase: 0.015,
+                sizeMin: 8, sizeMax: 22, colors: [{h:25,s:40,l:78,a:0.7}, {h:30,s:35,l:72,a:0.6}, {h:20,s:45,l:82,a:0.65}] },
+            badge: '2026 · 清明', footer: ['/* 雨滴 · 桃花 · 四月 */', '每滴春雨都是一行生长的代码'],
+        },
+        5: {
+            name: '新绿满枝', emoji: '🌿', subtitle: '立夏 · 清风',
+            cssVars: {
+                '--bg-start': '#e8f2e0', '--bg-end': '#d8e8d0',
+                '--card-bg': 'rgba(242, 250, 238, 0.76)',
+                '--text-primary': '#3d5235', '--text-secondary': '#6b7a5d',
+                '--accent': '#7da068', '--accent-hover': '#5f8548',
+                '--badge-bg': '#e8f5e0', '--badge-text': '#3d5235',
+                '--border': 'rgba(185, 210, 170, 0.42)',
+                '--shadow': 'rgba(120, 150, 100, 0.16)',
+                '--shadow-hover': 'rgba(110, 140, 90, 0.20)',
+                '--canvas-bg': '#dce8d4',
+                '--footer-text': '#6b7a5d',
+                '--divider': 'rgba(170, 195, 150, 0.22)',
+                '--code-bg': '#dce8d4', '--code-color': '#4d6240',
+                '--cal-bg': 'rgba(245, 252, 242, 0.96)',
+                '--cal-cell-hover': 'rgba(130, 160, 110, 0.10)',
+                '--cal-cell-active': 'rgba(130, 160, 110, 0.18)',
+                '--cal-cell-current': 'rgba(130, 160, 110, 0.28)',
+                '--snow-color': 'rgba(130, 155, 110, 0.18)',
+            },
+            particle: { type: 'leaf', count: 80, speedFactor: 0.6, windBase: 0.010,
+                sizeMin: 10, sizeMax: 28, colors: [{h:90,s:45,l:55,a:0.7}, {h:100,s:55,l:62,a:0.6}, {h:85,s:40,l:50,a:0.65}] },
+            badge: '2026 · 立夏', footer: ['/* 新叶 · 清风 · 五月 */', '每片新叶都是一行鲜活的代码'],
+        },
+        6: {
+            name: '紫阳花开', emoji: '💐', subtitle: '仲夏 · 绣球',
+            cssVars: {
+                '--bg-start': '#ece4f5', '--bg-end': '#e0d8f0',
+                '--card-bg': 'rgba(245, 242, 252, 0.76)',
+                '--text-primary': '#4a3d5c', '--text-secondary': '#7a6d8a',
+                '--accent': '#8b6faa', '--accent-hover': '#72558f',
+                '--badge-bg': '#f0e8f8', '--badge-text': '#4a3d5c',
+                '--border': 'rgba(200, 185, 220, 0.42)',
+                '--shadow': 'rgba(140, 120, 170, 0.16)',
+                '--shadow-hover': 'rgba(130, 110, 160, 0.21)',
+                '--canvas-bg': '#e6dcf2',
+                '--footer-text': '#7a6d8a',
+                '--divider': 'rgba(185, 165, 205, 0.22)',
+                '--code-bg': '#e6dcf2', '--code-color': '#5a4a6a',
+                '--cal-bg': 'rgba(248, 245, 255, 0.96)',
+                '--cal-cell-hover': 'rgba(150, 130, 180, 0.10)',
+                '--cal-cell-active': 'rgba(150, 130, 180, 0.18)',
+                '--cal-cell-current': 'rgba(150, 130, 180, 0.28)',
+                '--snow-color': 'rgba(150, 130, 180, 0.20)',
+            },
+            particle: { type: 'circle', count: 90, speedFactor: 0.5, windBase: 0.006,
+                sizeMin: 14, sizeMax: 36, colors: [{h:270,s:40,l:70,a:0.6}, {h:280,s:45,l:75,a:0.55}, {h:260,s:35,l:65,a:0.58}] },
+            badge: '2026 · 仲夏', footer: ['/* 绣球 · 团簇 · 六月 */', '每朵绣球都是一行圆满的代码'],
+        },
+        7: {
+            name: '夏日流光', emoji: '✨', subtitle: '盛夏 · 骄阳',
+            cssVars: {
+                '--bg-start': '#fff8e0', '--bg-end': '#ffe8c0',
+                '--card-bg': 'rgba(255, 252, 242, 0.76)',
+                '--text-primary': '#5c4a20', '--text-secondary': '#8b7a50',
+                '--accent': '#d4a830', '--accent-hover': '#b89020',
+                '--badge-bg': '#fff2d0', '--badge-text': '#5c4a20',
+                '--border': 'rgba(230, 210, 160, 0.42)',
+                '--shadow': 'rgba(200, 170, 100, 0.18)',
+                '--shadow-hover': 'rgba(190, 160, 90, 0.24)',
+                '--canvas-bg': '#faf0d8',
+                '--footer-text': '#8b7a50',
+                '--divider': 'rgba(210, 190, 140, 0.22)',
+                '--code-bg': '#faf0d8', '--code-color': '#6b5828',
+                '--cal-bg': 'rgba(255, 254, 248, 0.96)',
+                '--cal-cell-hover': 'rgba(200, 170, 100, 0.10)',
+                '--cal-cell-active': 'rgba(200, 170, 100, 0.18)',
+                '--cal-cell-current': 'rgba(200, 170, 100, 0.28)',
+                '--snow-color': 'rgba(210, 180, 110, 0.22)',
+            },
+            particle: { type: 'star', count: 100, speedFactor: 0.45, windBase: 0.005,
+                sizeMin: 6, sizeMax: 20, colors: [{h:45,s:80,l:65,a:0.8}, {h:50,s:90,l:72,a:0.7}, {h:40,s:75,l:60,a:0.75}] },
+            badge: '2026 · 盛夏', footer: ['/* 流光 · 骄阳 · 七月 */', '每道光芒都是一行热烈的代码'],
+        },
+        8: {
+            name: '碧海潮生', emoji: '🫧', subtitle: '夏末 · 听海',
+            cssVars: {
+                '--bg-start': '#e0f0ff', '--bg-end': '#c8e0f8',
+                '--card-bg': 'rgba(238, 246, 255, 0.76)',
+                '--text-primary': '#2a455c', '--text-secondary': '#5a758a',
+                '--accent': '#5a9ab8', '--accent-hover': '#3d7a98',
+                '--badge-bg': '#e0f0fa', '--badge-text': '#2a455c',
+                '--border': 'rgba(170, 210, 235, 0.42)',
+                '--shadow': 'rgba(100, 160, 200, 0.16)',
+                '--shadow-hover': 'rgba(90, 150, 190, 0.20)',
+                '--canvas-bg': '#d4e8f5',
+                '--footer-text': '#5a758a',
+                '--divider': 'rgba(160, 200, 220, 0.22)',
+                '--code-bg': '#d4e8f5', '--code-color': '#3a556a',
+                '--cal-bg': 'rgba(242, 250, 255, 0.96)',
+                '--cal-cell-hover': 'rgba(110, 170, 210, 0.10)',
+                '--cal-cell-active': 'rgba(110, 170, 210, 0.18)',
+                '--cal-cell-current': 'rgba(110, 170, 210, 0.28)',
+                '--snow-color': 'rgba(110, 170, 210, 0.18)',
+            },
+            particle: { type: 'bubble', count: 75, speedFactor: -0.4, windBase: 0.004,
+                sizeMin: 6, sizeMax: 22, colors: [{h:200,s:40,l:78,a:0.45}, {h:205,s:35,l:85,a:0.38}, {h:195,s:45,l:72,a:0.42}] },
+            badge: '2026 · 夏末', footer: ['/* 气泡 · 潮汐 · 八月 */', '每个气泡都是一行轻盈的代码'],
+        },
+        9: {
+            name: '银杏飘金', emoji: '🍂', subtitle: '初秋 · 白露',
+            cssVars: {
+                '--bg-start': '#f8f0d8', '--bg-end': '#f0e0b8',
+                '--card-bg': 'rgba(252, 248, 235, 0.76)',
+                '--text-primary': '#5a4828', '--text-secondary': '#8b7855',
+                '--accent': '#c8a040', '--accent-hover': '#a8852d',
+                '--badge-bg': '#f8edd0', '--badge-text': '#5a4828',
+                '--border': 'rgba(220, 200, 160, 0.42)',
+                '--shadow': 'rgba(190, 160, 100, 0.17)',
+                '--shadow-hover': 'rgba(180, 150, 90, 0.22)',
+                '--canvas-bg': '#efe4cc',
+                '--footer-text': '#8b7855',
+                '--divider': 'rgba(200, 180, 140, 0.22)',
+                '--code-bg': '#efe4cc', '--code-color': '#6a5535',
+                '--cal-bg': 'rgba(255, 252, 242, 0.96)',
+                '--cal-cell-hover': 'rgba(190, 160, 100, 0.10)',
+                '--cal-cell-active': 'rgba(190, 160, 100, 0.18)',
+                '--cal-cell-current': 'rgba(190, 160, 100, 0.28)',
+                '--snow-color': 'rgba(190, 160, 100, 0.20)',
+            },
+            particle: { type: 'ginkgo', count: 85, speedFactor: 0.65, windBase: 0.014,
+                sizeMin: 10, sizeMax: 26, colors: [{h:42,s:75,l:65,a:0.72}, {h:45,s:80,l:72,a:0.65}, {h:38,s:70,l:58,a:0.68}] },
+            badge: '2026 · 白露', footer: ['/* 银杏 · 金秋 · 九月 */', '每片银杏都是一行从容的代码'],
+        },
+        10: {
+            name: '枫红似火', emoji: '🍁', subtitle: '深秋 · 霜降',
+            cssVars: {
+                '--bg-start': '#f5e4d8', '--bg-end': '#f0d0b8',
+                '--card-bg': 'rgba(252, 240, 232, 0.76)',
+                '--text-primary': '#5c3028', '--text-secondary': '#8b5a4a',
+                '--accent': '#c85535', '--accent-hover': '#a84022',
+                '--badge-bg': '#f8e0d0', '--badge-text': '#5c3028',
+                '--border': 'rgba(220, 185, 160, 0.42)',
+                '--shadow': 'rgba(200, 120, 80, 0.18)',
+                '--shadow-hover': 'rgba(190, 110, 70, 0.24)',
+                '--canvas-bg': '#eedad0',
+                '--footer-text': '#8b5a4a',
+                '--divider': 'rgba(200, 160, 135, 0.22)',
+                '--code-bg': '#eedad0', '--code-color': '#6b3a2a',
+                '--cal-bg': 'rgba(255, 245, 240, 0.96)',
+                '--cal-cell-hover': 'rgba(200, 120, 90, 0.10)',
+                '--cal-cell-active': 'rgba(200, 120, 90, 0.18)',
+                '--cal-cell-current': 'rgba(200, 120, 90, 0.28)',
+                '--snow-color': 'rgba(200, 120, 80, 0.20)',
+            },
+            particle: { type: 'maple', count: 85, speedFactor: 0.7, windBase: 0.016,
+                sizeMin: 12, sizeMax: 30, colors: [{h:10,s:70,l:55,a:0.75}, {h:15,s:75,l:60,a:0.68}, {h:5,s:65,l:48,a:0.72}] },
+            badge: '2026 · 霜降', footer: ['/* 枫叶 · 霜降 · 十月 */', '每片枫叶都是一行热烈的代码'],
+        },
+        11: {
+            name: '金叶满庭', emoji: '🍂', subtitle: '立冬 · 残秋',
+            cssVars: {
+                '--bg-start': '#ede0ce', '--bg-end': '#dcccb5',
+                '--card-bg': 'rgba(245, 238, 225, 0.76)',
+                '--text-primary': '#4a3828', '--text-secondary': '#7a6855',
+                '--accent': '#a08060', '--accent-hover': '#856045',
+                '--badge-bg': '#f0e2d0', '--badge-text': '#4a3828',
+                '--border': 'rgba(200, 180, 155, 0.42)',
+                '--shadow': 'rgba(160, 130, 100, 0.16)',
+                '--shadow-hover': 'rgba(150, 120, 90, 0.20)',
+                '--canvas-bg': '#e6d8c4',
+                '--footer-text': '#7a6855',
+                '--divider': 'rgba(185, 160, 135, 0.22)',
+                '--code-bg': '#e6d8c4', '--code-color': '#5a4838',
+                '--cal-bg': 'rgba(248, 244, 236, 0.96)',
+                '--cal-cell-hover': 'rgba(160, 130, 100, 0.10)',
+                '--cal-cell-active': 'rgba(160, 130, 100, 0.18)',
+                '--cal-cell-current': 'rgba(160, 130, 100, 0.28)',
+                '--snow-color': 'rgba(160, 130, 100, 0.18)',
+            },
+            particle: { type: 'leaf', count: 75, speedFactor: 0.6, windBase: 0.013,
+                sizeMin: 10, sizeMax: 28, colors: [{h:35,s:55,l:55,a:0.7}, {h:30,s:50,l:48,a:0.65}, {h:40,s:60,l:60,a:0.68}] },
+            badge: '2026 · 立冬', footer: ['/* 金叶 · 残秋 · 十一月 */', '每片落叶都是一行沉淀的代码'],
+        },
+        12: {
+            name: '冬雪静落', emoji: '❄️', subtitle: '冬至 · 瑞雪',
+            cssVars: {
+                '--bg-start': '#e4edf6', '--bg-end': '#d0dce8',
+                '--card-bg': 'rgba(238, 245, 252, 0.78)',
+                '--text-primary': '#354555', '--text-secondary': '#687888',
+                '--accent': '#8a90a8', '--accent-hover': '#6b728f',
+                '--badge-bg': '#e6eef6', '--badge-text': '#354555',
+                '--border': 'rgba(185, 200, 220, 0.44)',
+                '--shadow': 'rgba(100, 120, 150, 0.17)',
+                '--shadow-hover': 'rgba(90, 110, 140, 0.22)',
+                '--canvas-bg': '#dde6f0',
+                '--footer-text': '#687888',
+                '--divider': 'rgba(170, 185, 200, 0.22)',
+                '--code-bg': '#dde6f0', '--code-color': '#455565',
+                '--cal-bg': 'rgba(242, 248, 255, 0.96)',
+                '--cal-cell-hover': 'rgba(130, 150, 180, 0.10)',
+                '--cal-cell-active': 'rgba(130, 150, 180, 0.18)',
+                '--cal-cell-current': 'rgba(130, 150, 180, 0.28)',
+                '--snow-color': 'rgba(130, 160, 200, 0.22)',
+            },
+            particle: { type: 'snowflake', count: 100, speedFactor: 0.35, windBase: 0.004,
+                sizeMin: 8, sizeMax: 26, colors: [{h:40,s:8,l:94,a:0.65}, {h:45,s:10,l:96,a:0.55}, {h:210,s:8,l:90,a:0.58}] },
+            badge: '2026 · 冬至', footer: ['/* 瑞雪 · 暖炉 · 十二月 */', '每片瑞雪都是一行温暖的代码'],
+        },
+    };
+
+    // =========================================================================
+    // DOM 引用
+    // =========================================================================
+    const canvas = document.getElementById('sakuraCanvas');
+    const ctx = canvas.getContext('2d');
+    const titleEl = document.getElementById('titleEl');
+    const subEl = document.getElementById('subEl');
+    const badgeEmoji = document.getElementById('badgeEmoji');
+    const badgeText = document.getElementById('badgeText');
+    const codeTag = document.getElementById('codeTag');
+    const footerText = document.getElementById('footerText');
+    const dateBadge = document.getElementById('dateBadge');
+    const calendarPanel = document.getElementById('calendarPanel');
+    const calGrid = document.getElementById('calGrid');
+    const resetBtn = document.getElementById('resetBtn');
+
+    // =========================================================================
+    // 状态
+    // =========================================================================
+    const now = new Date();
+    let currentMonth = now.getMonth() + 1;  // 1-12
+    let petals = [];
+    let width, height;
+    let mouseX = 0, mouseY = 0;
+    let calendarOpen = false;
+    let cachedSnowColor = 'rgba(200, 140, 120, 0.25)';
+
+    // =========================================================================
+    // Canvas 尺寸
+    // =========================================================================
+    function resizeCanvas() {
+        const wrapper = canvas.parentElement;
+        const rect = wrapper.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        width = rect.width;
+        height = rect.height;
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+        canvas.style.width = width + 'px';
+        canvas.style.height = height + 'px';
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    // =========================================================================
+    // 粒子工厂
+    // =========================================================================
+    function getTheme() {
+        return MONTH_THEMES[currentMonth];
+    }
+
+    function randomColor(colors) {
+        const c = colors[Math.floor(Math.random() * colors.length)];
+        return { h: c.h, s: c.s, l: c.l, a: c.a };
+    }
+
+    function createParticle(index) {
+        const t = getTheme().particle;
+        const color = randomColor(t.colors);
+        const size = t.sizeMin + Math.random() * (t.sizeMax - t.sizeMin);
+        const x = Math.random() * width;
+        const y = Math.random() * height * 1.2 - height * 0.2;
+        const speedY = (t.type === 'bubble' ? -(0.2 + Math.random() * 0.5) : 0.3 + Math.random() * t.speedFactor);
+        const speedX = -0.2 + Math.random() * 0.5;
+        const rotation = Math.random() * Math.PI * 2;
+        const rotSpeed = (Math.random() - 0.5) * 0.03;
+        const opacity = color.a;
+        return {
+            x, y, size, speedY, speedX, rotation, rotSpeed, opacity,
+            hue: color.h, sat: color.s, light: color.l,
+            phase: Math.random() * Math.PI * 2,
+            amp: 0.2 + Math.random() * 0.6,
+            type: t.type,
+            index,
+        };
+    }
+
+    function initParticles() {
+        const count = getTheme().particle.count;
+        petals = [];
+        for (let i = 0; i < count; i++) {
+            petals.push(createParticle(i));
+        }
+    }
+
+    // =========================================================================
+    // 粒子绘制函数
+    // =========================================================================
+    function drawPetal(p) {
+        const { x, y, size, rotation, hue, sat, light, opacity } = p;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(rotation);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.bezierCurveTo(-size * 0.4, -size * 0.3, -size * 0.7, -size * 0.7, -size * 0.15, -size * 1.0);
+        ctx.quadraticCurveTo(0, -size * 0.9, size * 0.15, -size * 1.0);
+        ctx.bezierCurveTo(size * 0.7, -size * 0.7, size * 0.4, -size * 0.3, 0, 0);
+        ctx.closePath();
+        ctx.fillStyle = `hsla(${hue}, ${sat}%, ${light}%, ${opacity})`;
+        ctx.shadowColor = cachedSnowColor;
+        ctx.shadowBlur = 10;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 0.3;
+        ctx.fillStyle = 'rgba(255, 240, 235, 0.5)';
+        ctx.beginPath();
+        ctx.ellipse(-size * 0.1, -size * 0.55, size * 0.2, size * 0.25, -0.3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    function drawSnowflake(p) {
+        const { x, y, size, rotation, hue, sat, light, opacity } = p;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(rotation);
+        ctx.strokeStyle = `hsla(${hue}, ${sat}%, ${light}%, ${opacity})`;
+        ctx.lineWidth = Math.max(1, size * 0.08);
+        ctx.lineCap = 'round';
+        for (let i = 0; i < 6; i++) {
+            ctx.rotate((Math.PI * 2) / 6);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(0, -size * 0.9);
+            ctx.stroke();
+            // 小分叉
+            const bx = size * 0.35;
+            const by = -size * 0.55;
+            ctx.beginPath();
+            ctx.moveTo(0, -size * 0.4);
+            ctx.lineTo(bx, by);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(0, -size * 0.4);
+            ctx.lineTo(-bx, by);
+            ctx.stroke();
+        }
+        // 中心点
+        ctx.fillStyle = `hsla(${hue}, ${sat}%, ${light}%, ${opacity + 0.15})`;
+        ctx.beginPath();
+        ctx.arc(0, 0, size * 0.12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    function drawLeaf(p) {
+        const { x, y, size, rotation, hue, sat, light, opacity } = p;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(rotation);
+        // 叶片
+        ctx.beginPath();
+        ctx.ellipse(0, -size * 0.3, size * 0.35, size * 0.7, 0, 0, Math.PI * 2);
+        ctx.fillStyle = `hsla(${hue}, ${sat}%, ${light}%, ${opacity})`;
+        ctx.shadowColor = `hsla(${hue}, ${sat}%, ${light}%, 0.2)`;
+        ctx.shadowBlur = 6;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        // 叶脉
+        ctx.strokeStyle = `hsla(${hue}, ${sat - 5}%, ${light - 12}%, ${opacity * 0.5})`;
+        ctx.lineWidth = Math.max(0.5, size * 0.03);
+        ctx.beginPath();
+        ctx.moveTo(0, size * 0.3);
+        ctx.lineTo(0, -size * 0.9);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    function drawGinkgo(p) {
+        const { x, y, size, rotation, hue, sat, light, opacity } = p;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(rotation);
+        // 银杏扇形
+        ctx.beginPath();
+        ctx.moveTo(0, size * 0.15);
+        ctx.bezierCurveTo(-size * 0.7, -size * 0.15, -size * 0.75, -size * 0.85, -size * 0.1, -size * 1.05);
+        ctx.quadraticCurveTo(0, -size * 0.75, size * 0.1, -size * 1.05);
+        ctx.bezierCurveTo(size * 0.75, -size * 0.85, size * 0.7, -size * 0.15, 0, size * 0.15);
+        ctx.closePath();
+        ctx.fillStyle = `hsla(${hue}, ${sat}%, ${light}%, ${opacity})`;
+        ctx.shadowColor = `hsla(${hue}, ${sat}%, ${light}%, 0.2)`;
+        ctx.shadowBlur = 8;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        // 扇柄
+        ctx.strokeStyle = `hsla(${hue}, ${sat - 5}%, ${light - 15}%, ${opacity * 0.6})`;
+        ctx.lineWidth = Math.max(0.5, size * 0.04);
+        ctx.beginPath();
+        ctx.moveTo(0, size * 0.15);
+        ctx.lineTo(0, size * 0.5);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    function drawMaple(p) {
+        const { x, y, size, rotation, hue, sat, light, opacity } = p;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(rotation);
+        ctx.fillStyle = `hsla(${hue}, ${sat}%, ${light}%, ${opacity})`;
+        ctx.shadowColor = `hsla(${hue}, ${sat}%, ${light}%, 0.22)`;
+        ctx.shadowBlur = 8;
+        // 五角枫叶
+        ctx.beginPath();
+        const tips = 5;
+        for (let i = 0; i < tips; i++) {
+            const angle = (i / tips) * Math.PI * 2 - Math.PI / 2;
+            const tipX = Math.cos(angle) * size * 0.95;
+            const tipY = Math.sin(angle) * size * 0.95;
+            const cpAngle1 = angle - 0.25;
+            const cpAngle2 = angle + 0.25;
+            const cpR = size * 0.4;
+            if (i === 0) {
+                ctx.moveTo(tipX, tipY);
+            } else {
+                ctx.lineTo(tipX, tipY);
+            }
+            ctx.quadraticCurveTo(
+                Math.cos(cpAngle2) * cpR, Math.sin(cpAngle2) * cpR,
+                Math.cos(angle + 0.63) * cpR * 0.6, Math.sin(angle + 0.63) * cpR * 0.6
+            );
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        // 叶柄
+        ctx.strokeStyle = `hsla(${hue}, ${sat - 5}%, ${light - 15}%, ${opacity * 0.6})`;
+        ctx.lineWidth = Math.max(0.5, size * 0.04);
+        ctx.beginPath();
+        ctx.moveTo(0, size * 0.2);
+        ctx.lineTo(0, size * 0.55);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    function drawCircle(p) {
+        const { x, y, size, hue, sat, light, opacity } = p;
+        // 绣球花效果 —— 中心圆 + 周围小圆
+        ctx.fillStyle = `hsla(${hue}, ${sat}%, ${light}%, ${opacity})`;
+        ctx.shadowColor = `hsla(${hue}, ${sat}%, ${light}%, 0.25)`;
+        ctx.shadowBlur = 12;
+        ctx.beginPath();
+        ctx.arc(x, y, size * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+        // 周围小花瓣
+        ctx.shadowBlur = 6;
+        for (let i = 0; i < 5; i++) {
+            const a = (i / 5) * Math.PI * 2 + p.phase;
+            const cx = x + Math.cos(a) * size * 0.45;
+            const cy = y + Math.sin(a) * size * 0.45;
+            ctx.beginPath();
+            ctx.arc(cx, cy, size * 0.25, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.shadowBlur = 0;
+    }
+
+    function drawBubble(p) {
+        const { x, y, size, hue, sat, light, opacity } = p;
+        ctx.beginPath();
+        ctx.arc(x, y, size * 0.5, 0, Math.PI * 2);
+        ctx.fillStyle = `hsla(${hue}, ${sat}%, ${light}%, ${opacity})`;
+        ctx.strokeStyle = `hsla(${hue}, ${sat + 10}%, ${light + 8}%, ${opacity * 0.6})`;
+        ctx.lineWidth = Math.max(0.8, size * 0.05);
+        ctx.fill();
+        ctx.stroke();
+        // 高光
+        ctx.fillStyle = `rgba(255, 255, 255, ${opacity * 0.4})`;
+        ctx.beginPath();
+        ctx.ellipse(x - size * 0.12, y - size * 0.15, size * 0.15, size * 0.1, -0.5, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    function drawStar(p) {
+        const { x, y, size, rotation, hue, sat, light, opacity } = p;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(rotation);
+        // 四角星光
+        ctx.fillStyle = `hsla(${hue}, ${sat}%, ${light}%, ${opacity})`;
+        ctx.shadowColor = `hsla(${hue}, ${sat}%, ${light}%, 0.5)`;
+        ctx.shadowBlur = size * 0.6;
+        ctx.beginPath();
+        const innerR = size * 0.15;
+        const outerR = size * 0.5;
+        for (let i = 0; i < 8; i++) {
+            const a = (i / 8) * Math.PI * 2;
+            const r = i % 2 === 0 ? outerR : innerR;
+            const sx = Math.cos(a) * r;
+            const sy = Math.sin(a) * r;
+            if (i === 0) ctx.moveTo(sx, sy);
+            else ctx.lineTo(sx, sy);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        // 光晕
+        const grd = ctx.createRadialGradient(0, 0, 0, 0, 0, outerR * 1.5);
+        grd.addColorStop(0, `hsla(${hue}, ${sat}%, ${light}%, ${opacity * 0.4})`);
+        grd.addColorStop(1, `hsla(${hue}, ${sat}%, ${light}%, 0)`);
+        ctx.fillStyle = grd;
+        ctx.beginPath();
+        ctx.arc(0, 0, outerR * 1.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    function drawRain(p) {
+        const { x, y, size, hue, sat, light, opacity } = p;
+        ctx.strokeStyle = `hsla(${hue}, ${sat}%, ${light}%, ${opacity})`;
+        ctx.lineWidth = Math.max(0.6, size * 0.06);
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - size * 0.1, y + size * 1.2);
+        ctx.stroke();
+    }
+
+    function drawIceflake(p) {
+        const { x, y, size, rotation, hue, sat, light, opacity } = p;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(rotation);
+        // 锋利冰晶 —— 六角形主体 + 尖刺
+        ctx.beginPath();
+        for (let i = 0; i < 6; i++) {
+            const a = (i / 6) * Math.PI * 2;
+            const outerR = size * 0.55;
+            const innerR = size * 0.18;
+            const r = i % 2 === 0 ? outerR : innerR;
+            const sx = Math.cos(a) * r;
+            const sy = Math.sin(a) * r;
+            if (i === 0) ctx.moveTo(sx, sy);
+            else ctx.lineTo(sx, sy);
+        }
+        ctx.closePath();
+        ctx.fillStyle = `hsla(${hue}, ${sat + 8}%, ${light}%, ${opacity})`;
+        ctx.strokeStyle = `hsla(${hue}, ${sat}%, ${light - 8}%, ${opacity * 0.6})`;
+        ctx.lineWidth = Math.max(0.4, size * 0.05);
+        ctx.fill();
+        ctx.stroke();
+        // 中心光泽
+        const grd = ctx.createRadialGradient(0, 0, 0, 0, 0, size * 0.35);
+        grd.addColorStop(0, `rgba(255, 255, 255, ${opacity * 0.6})`);
+        grd.addColorStop(1, `rgba(255, 255, 255, 0)`);
+        ctx.fillStyle = grd;
+        ctx.beginPath();
+        ctx.arc(0, 0, size * 0.35, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    const DRAW_FUNCS = {
+        iceflake: drawIceflake,
+        petal: drawPetal,
+        snowflake: drawSnowflake,
+        leaf: drawLeaf,
+        ginkgo: drawGinkgo,
+        maple: drawMaple,
+        circle: drawCircle,
+        bubble: drawBubble,
+        star: drawStar,
+        rain: drawRain,
+        rainPetal: null, // handled specially
+    };
+
+    // =========================================================================
+    // 更新 & 渲染
+    // =========================================================================
+    function updateParticles() {
+        const t = getTheme().particle;
+        const windBase = t.windBase;
+        const time = Date.now() * 0.001;
+
+        for (let p of petals) {
+            const windForce = windBase + (mouseX - width / 2) / width * 0.018;
+            const sway = Math.sin(time * 1.2 + p.phase) * p.amp * 0.3;
+            p.x += p.speedX + windForce * 0.6 + sway * 0.12;
+            p.y += p.speedY;
+            p.rotation += p.rotSpeed;
+
+            const margin = 60;
+            if (p.type === 'bubble') {
+                // 气泡从底部生成，向上飘
+                if (p.y < -margin) {
+                    p.y = height + margin + Math.random() * 40;
+                    p.x = Math.random() * width * 1.2 - width * 0.1;
+                    p.rotation = Math.random() * Math.PI * 2;
+                }
+            } else {
+                if (p.y > height + margin) {
+                    p.y = -margin - Math.random() * 40;
+                    p.x = Math.random() * width * 1.2 - width * 0.1;
+                    p.rotation = Math.random() * Math.PI * 2;
+                }
+            }
+            if (p.x < -margin - 30) {
+                p.x = width + margin + Math.random() * 30;
+            } else if (p.x > width + margin + 30) {
+                p.x = -margin - Math.random() * 30;
+            }
+        }
+    }
+
+    function drawBackground() {
+        const grad = ctx.createRadialGradient(width * 0.3, height * 0.2, 20, width * 0.6, height * 0.5, width * 0.8);
+        grad.addColorStop(0, 'rgba(255, 235, 220, 0.12)');
+        grad.addColorStop(1, 'rgba(235, 205, 190, 0.01)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, width, height);
+
+        for (let i = 0; i < 3; i++) {
+            const cx = width * (0.2 + 0.6 * Math.sin(i * 2.1 + Date.now() * 0.0002));
+            const cy = height * (0.3 + 0.4 * Math.cos(i * 1.7 + Date.now() * 0.0003));
+            const r = 80 + 40 * Math.sin(i + Date.now() * 0.0005);
+            const grad2 = ctx.createRadialGradient(cx, cy, 4, cx, cy, r);
+            grad2.addColorStop(0, 'rgba(255, 220, 200, 0.06)');
+            grad2.addColorStop(1, 'rgba(255, 220, 200, 0)');
+            ctx.fillStyle = grad2;
+            ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+        }
+    }
+
+    function render() {
+        ctx.clearRect(0, 0, width, height);
+        drawBackground();
+
+        // 雨粒子的背景暗化效果
+        const t = getTheme().particle;
+        if (t.type === 'rain' || t.type === 'rainPetal') {
+            ctx.fillStyle = 'rgba(0,0,0,0.02)';
+            ctx.fillRect(0, 0, width, height);
+        }
+
+        for (let p of petals) {
+            if (p.type === 'rain') {
+                drawRain(p);
+            } else if (p.type === 'rainPetal') {
+                // 混合: 70%雨滴 + 30%花瓣
+                if (p.index % 3 === 0) {
+                    drawPetal(p);
+                } else {
+                    drawRain({ ...p, speedY: p.speedY * 1.4, size: p.size * 0.5 });
+                }
+            } else {
+                const fn = DRAW_FUNCS[p.type];
+                if (fn) fn(p);
+            }
+        }
+
+        updateParticles();
+        requestAnimationFrame(render);
+    }
+
+    // =========================================================================
+    // 应用主题
+    // =========================================================================
+    function applyTheme(animate) {
+        const theme = getTheme();
+        const root = document.documentElement;
+
+        // 更新 CSS 变量
+        Object.entries(theme.cssVars).forEach(([key, value]) => {
+            root.style.setProperty(key, value);
+        });
+
+        // 缓存雪花阴影颜色
+        cachedSnowColor = theme.cssVars['--snow-color'];
+
+        // 更新文字
+        titleEl.textContent = theme.emoji + ' ' + theme.name + ' · 代码';
+        subEl.textContent = theme.subtitle;
+        badgeEmoji.textContent = theme.emoji;
+        badgeText.textContent = theme.badge;
+        codeTag.textContent = theme.footer[0];
+        footerText.textContent = theme.footer[1];
+
+        // 重置粒子
+        initParticles();
+
+        // 动画效果
+        if (animate) {
+            canvas.style.opacity = '0';
+            canvas.style.transition = 'opacity 0.25s ease';
+            requestAnimationFrame(() => {
+                canvas.style.opacity = '1';
+                setTimeout(() => { canvas.style.transition = ''; }, 260);
+            });
+        }
+    }
+
+    // =========================================================================
+    // 日历
+    // =========================================================================
+    function renderCalendar() {
+        calGrid.innerHTML = '';
+
+        const realMonth = now.getMonth() + 1;
+
+        for (let m = 1; m <= 12; m++) {
+            const theme = MONTH_THEMES[m];
+            const cell = document.createElement('div');
+            cell.className = 'cal-cell';
+            cell.textContent = theme.emoji + ' ' + m + '月';
+            if (m === currentMonth) cell.classList.add('active');
+            if (m === realMonth) cell.classList.add('current');
+            cell.addEventListener('click', () => {
+                if (m === currentMonth) {
+                    closeCalendar();
+                    return;
+                }
+                currentMonth = m;
+                applyTheme(true);
+                renderCalendar();
+                closeCalendar();
+            });
+            calGrid.appendChild(cell);
+        }
+    }
+
+    function openCalendar() {
+        calendarOpen = true;
+        calendarPanel.classList.add('show');
+        dateBadge.classList.add('open');
+        renderCalendar();
+    }
+
+    function closeCalendar() {
+        calendarOpen = false;
+        calendarPanel.classList.remove('show');
+        dateBadge.classList.remove('open');
+    }
+
+    function toggleCalendar() {
+        if (calendarOpen) closeCalendar();
+        else openCalendar();
+    }
+
+    // =========================================================================
+    // 按钮事件
+    // =========================================================================
+    function resetScene() {
+        const t = getTheme().particle;
+        for (let p of petals) {
+            p.y = -Math.random() * height * 0.6 - 20;
+            p.x = Math.random() * width * 1.2 - width * 0.1;
+            p.rotation = Math.random() * Math.PI * 2;
+            p.speedY = t.type === 'bubble'
+                ? -(0.2 + Math.random() * 0.5)
+                : 0.3 + Math.random() * t.speedFactor;
+            p.speedX = -0.2 + Math.random() * 0.5;
+            p.rotSpeed = (Math.random() - 0.5) * 0.03;
+        }
+        // 重新随机颜色
+        const colors = t.colors;
+        for (let p of petals) {
+            const c = randomColor(colors);
+            p.hue = c.h;
+            p.sat = c.s;
+            p.light = c.l;
+            p.opacity = c.a;
+        }
+    }
+
+    // =========================================================================
+    // 交互
+    // =========================================================================
+    function handleMouseMove(e) {
+        const rect = canvas.getBoundingClientRect();
+        mouseX = Math.min(width, Math.max(0, e.clientX - rect.left));
+        mouseY = Math.min(height, Math.max(0, e.clientY - rect.top));
+    }
+
+    function handleTouchMove(e) {
+        if (e.touches.length > 0) {
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            mouseX = Math.min(width, Math.max(0, touch.clientX - rect.left));
+            mouseY = Math.min(height, Math.max(0, touch.clientY - rect.top));
+        }
+    }
+
+    // 点击日历外部关闭
+    function handleOutsideClick(e) {
+        if (calendarOpen && !dateBadge.contains(e.target) && !calendarPanel.contains(e.target)) {
+            closeCalendar();
+        }
+    }
+
+    // =========================================================================
+    // 启动
+    // =========================================================================
+    function init() {
+        resizeCanvas();
+        applyTheme(false);
+        renderCalendar();
+        dateBadge.addEventListener('click', toggleCalendar);
+        resetBtn.addEventListener('click', resetScene);
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+            for (let p of petals) {
+                p.x = Math.random() * width;
+                p.y = Math.random() * height * 0.8;
+            }
+        });
+        canvas.addEventListener('mousemove', handleMouseMove);
+        canvas.addEventListener('touchmove', handleTouchMove, { passive: true });
+        canvas.addEventListener('touchstart', handleTouchMove, { passive: true });
+        document.addEventListener('click', handleOutsideClick);
+
+        // 键盘导航
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && calendarOpen) closeCalendar();
+        });
+
+        render();
+    }
+
+    if (document.readyState === 'complete') {
+        init();
+    } else {
+        window.addEventListener('load', init);
+    }
+})();
+</script>
+</body>
+</html>

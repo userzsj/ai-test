@@ -5,6 +5,35 @@
             <div v-if="messages.length === 0 && !loading" class="ds-empty">
                 <h1>菲比揪比</h1>
                 <p>有什么可以帮助你的？</p>
+                <!-- 模式切换 -->
+                <div class="ds-mode-switch">
+                    <button class="ds-mode-btn" :class="{ active: currentModel === 'deepseek-v4-flash' }"
+                        @click="switchModel('deepseek-v4-flash')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                        </svg>
+                        快速模式
+                    </button>
+                    <button class="ds-mode-btn" :class="{ active: currentModel === 'deepseek-v4-pro' }"
+                        @click="switchModel('deepseek-v4-pro')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                            <path d="M2 17l10 5 10-5" />
+                            <path d="M2 12l10 5 10-5" />
+                        </svg>
+                        专家模式
+                    </button>
+                </div>
+            </div>
+
+            <!-- 已有消息时，顶部显示当前模式 -->
+            <div v-if="messages.length > 0" class="ds-model-bar">
+                <span class="ds-model-badge">
+                    {{ currentModel === 'deepseek-v4-flash' ? '⚡ 快速模式' : '🎯 专家模式' }}
+                </span>
+                <span class="ds-switch-hint" @click="messages = []; inputText = ''">开启新对话</span>
             </div>
 
             <div v-for="msg in messages" :key="msg.id" class="ds-row" :class="{ 'ds-row-user': msg.role === 'user' }">
@@ -55,12 +84,18 @@ import { ref, nextTick, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import hljs from 'highlight.js'
 import 'highlight.js/styles/github-dark.css'
+
 const authStore = useAuthStore()
 const inputText = ref('')
 const loading = ref(false)
 const msgContainer = ref(null)
-
 const messages = ref([])
+const currentModel = ref('deepseek-v4-flash')
+
+function switchModel(model) {
+    currentModel.value = model
+}
+
 function renderContent(text) {
     if (!text) return ''
     let html = text
@@ -68,7 +103,6 @@ function renderContent(text) {
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
 
-    // 解析代码块
     html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
         const decoded = code.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
         const highlighted = lang
@@ -101,6 +135,7 @@ function handleCodeClick(e) {
         a.click()
     }
 }
+
 async function handleSend(content) {
     const text = content?.trim?.() || content
     if (!text || loading.value) return
@@ -118,7 +153,7 @@ async function handleSend(content) {
                 'Authorization': `Bearer ${import.meta.env.VITE_DEEPSEEK_API_KEY}`
             },
             body: JSON.stringify({
-                model: 'deepseek-chat',
+                model: currentModel.value,
                 messages: messages.value.map(m => ({
                     role: m.role === 'ai' ? 'assistant' : 'user',
                     content: m.content
@@ -144,68 +179,12 @@ function scrollBottom() {
         }
     })
 }
+
 onMounted(() => document.addEventListener('click', handleCodeClick))
 onUnmounted(() => document.removeEventListener('click', handleCodeClick))
 </script>
 
 <style scoped>
-/* 代码块 */
-:deep(.cb) {
-    background: #0d1117;
-    border-radius: 8px;
-    margin: 10px 0;
-    overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-:deep(.cb-h) {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 14px;
-    background: rgba(255, 255, 255, 0.03);
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.5);
-}
-
-:deep(.cb-btns) {
-    display: flex;
-    gap: 6px;
-}
-
-:deep(.cb-btn) {
-    background: rgba(255, 255, 255, 0.08);
-    border: none;
-    color: rgba(255, 255, 255, 0.6);
-    padding: 3px 10px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 11px;
-}
-
-:deep(.cb-btn:hover) {
-    background: rgba(255, 255, 255, 0.15);
-    color: #fff;
-}
-
-:deep(.cb pre) {
-    margin: 0;
-    padding: 14px;
-    overflow-x: auto;
-}
-
-:deep(.cb code) {
-    font-size: 13px;
-    line-height: 1.6;
-}
-
-:deep(.ic) {
-    background: rgba(255, 255, 255, 0.08);
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 13px;
-}
-
 .ds-root {
     display: flex;
     flex-direction: column;
@@ -215,7 +194,6 @@ onUnmounted(() => document.removeEventListener('click', handleCodeClick))
     overflow: hidden;
 }
 
-/* 消息区 */
 .ds-main {
     flex: 1;
     overflow-y: auto;
@@ -238,6 +216,68 @@ onUnmounted(() => document.removeEventListener('click', handleCodeClick))
     color: rgba(255, 255, 255, 0.45);
     font-size: 16px;
     margin-top: 10px;
+}
+
+/* 模式切换 */
+.ds-mode-switch {
+    display: flex;
+    gap: 10px;
+    margin-top: 24px;
+    justify-content: center;
+}
+
+.ds-mode-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.ds-mode-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.ds-mode-btn.active {
+    background: rgba(79, 70, 229, 0.15);
+    border-color: #4f46e5;
+    color: #fff;
+}
+
+/* 顶部模式标签 */
+.ds-model-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.ds-model-badge {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.05);
+    padding: 4px 12px;
+    border-radius: 20px;
+}
+
+.ds-switch-hint {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.3);
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.ds-switch-hint:hover {
+    color: rgba(255, 255, 255, 0.6);
 }
 
 .ds-row {
@@ -283,11 +323,9 @@ onUnmounted(() => document.removeEventListener('click', handleCodeClick))
     line-height: 1.75;
     white-space: pre-wrap;
     word-break: break-word;
-    /* padding-top: 3px; */
     flex: 1;
 }
 
-/* 思考动画 */
 .ds-dot {
     display: inline-block;
     width: 5px;
@@ -319,7 +357,6 @@ onUnmounted(() => document.removeEventListener('click', handleCodeClick))
     }
 }
 
-/* 输入区 */
 .ds-footer {
     padding: 16px 16px 0px;
     max-width: 800px;
@@ -397,7 +434,76 @@ onUnmounted(() => document.removeEventListener('click', handleCodeClick))
     text-align: right;
 }
 
-/* 自定义滚动条 - 无背景轨道 */
+.ds-bubble {
+    display: inline-block;
+    background: #4f46e5;
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: 16px 16px 4px 16px;
+    font-size: 15px;
+    line-height: 1.5;
+    max-width: 100%;
+    word-break: break-word;
+}
+
+/* 代码块 */
+:deep(.cb) {
+    background: #0d1117;
+    border-radius: 8px;
+    margin: 10px 0;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+:deep(.cb-h) {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 14px;
+    background: rgba(255, 255, 255, 0.03);
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+:deep(.cb-btns) {
+    display: flex;
+    gap: 6px;
+}
+
+:deep(.cb-btn) {
+    background: rgba(255, 255, 255, 0.08);
+    border: none;
+    color: rgba(255, 255, 255, 0.6);
+    padding: 3px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+}
+
+:deep(.cb-btn:hover) {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+}
+
+:deep(.cb pre) {
+    margin: 0;
+    padding: 14px;
+    overflow-x: auto;
+}
+
+:deep(.cb code) {
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+:deep(.ic) {
+    background: rgba(255, 255, 255, 0.08);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+/* 滚动条 */
 .ds-main::-webkit-scrollbar {
     width: 4px;
 }
@@ -422,17 +528,5 @@ onUnmounted(() => document.removeEventListener('click', handleCodeClick))
 .ds-main {
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
-}
-
-.ds-bubble {
-    display: inline-block;
-    background: #4f46e5;
-    color: #fff;
-    padding: 10px 16px;
-    border-radius: 16px 16px 4px 16px;
-    font-size: 15px;
-    line-height: 1.5;
-    max-width: 100%;
-    word-break: break-word;
 }
 </style>
